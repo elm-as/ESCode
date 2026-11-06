@@ -104,3 +104,4 @@ export class ReactWebAdapter implements IFrameworkAdapter {
     };
   }
 }
+

@@ -73,3 +73,4 @@ export async function fetchRecentProjects(): Promise<RecentProject[]> {
 export async function recordRecentProject(path: string, name: string, framework: string): Promise<void> {
   await invoke("db_add_recent_project", { path, name, framework });
 }
+

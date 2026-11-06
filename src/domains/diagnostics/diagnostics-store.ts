@@ -31,3 +31,4 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set) => ({
     set({ filterSeverity: severity });
   },
 }));
+

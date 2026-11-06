@@ -19,3 +19,4 @@ export interface EditorSettings {
   wordWrap: "on" | "off";
   minimap: boolean;
 }
+

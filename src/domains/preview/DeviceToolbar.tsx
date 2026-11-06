@@ -139,3 +139,4 @@ export const DeviceToolbar: React.FC<DeviceToolbarProps> = ({
     </div>
   );
 };
+

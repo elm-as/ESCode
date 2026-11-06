@@ -23,6 +23,12 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      dockview:
+        specifier: ^8.8.3
+        version: 8.8.3
+      dockview-react:
+        specifier: ^8.8.3
+        version: 8.8.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       lucide-react:
         specifier: ^1.69.0
         version: 1.69.0(@types/react@19.3.0)(react@19.3.1)
@@ -424,6 +430,18 @@ packages:
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
+
+  dockview-core@8.8.3:
+    resolution: {integrity: sha512-B9v+ibiXnZ5qgFJ7VEqMcNxpG0S5Y7Yx7uuGqqSyEFSC3bRZktUoXWo3HCrFp+QTdFmA1dJD1ye/gI4yL3hU2g==}
+
+  dockview-react@8.8.3:
+    resolution: {integrity: sha512-pfd5Dgwbh+OeGIwrctIsRLeDb5rLTuKK9rBM2ZRKEGLri9KHPL58FYAYTzZ2T5m/Fy6ysjRgVe8hBgib2JAmmA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  dockview@8.8.3:
+    resolution: {integrity: sha512-hTb5X4Z74k0+5wtOlx1gNsx/q5ve1p0JQ6s7Ovl24YhdkaR9AhfWFlq1dQYwXjXIoWm8RFW6aTZMhCTiEv94EA==}
 
   dompurify@3.4.15:
     resolution: {integrity: sha512-EUBjM+B+lkDE41iE82DDSCfkoPGfXx8IxFxPMjNzm/Uk4xDet77rTN9wqlxlVg71kK7XGuUMv6wUxJUwwv+Xyw==}
@@ -906,6 +924,18 @@ snapshots:
   csstype@3.2.3: {}
 
   detect-libc@2.1.2: {}
+
+  dockview-core@8.8.3: {}
+
+  dockview-react@8.8.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
+    dependencies:
+      dockview: 8.8.3
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
+
+  dockview@8.8.3:
+    dependencies:
+      dockview-core: 8.8.3
 
   dompurify@3.4.15:
     optionalDependencies:

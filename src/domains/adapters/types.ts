@@ -42,3 +42,4 @@ export interface IFrameworkAdapter {
   getStatus(): AdapterStatus;
   getCapabilities(): AdapterCapabilities;
 }
+

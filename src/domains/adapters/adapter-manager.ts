@@ -93,3 +93,4 @@ export class AdapterManager {
 }
 
 export const adapterManager = new AdapterManager();
+

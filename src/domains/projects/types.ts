@@ -27,3 +27,4 @@ export interface RecentProject {
   framework: string;
   last_opened: number;
 }
+

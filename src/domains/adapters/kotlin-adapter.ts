@@ -115,3 +115,4 @@ export class KotlinComposeAdapter implements IFrameworkAdapter {
     };
   }
 }
+

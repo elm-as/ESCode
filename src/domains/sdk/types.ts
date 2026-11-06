@@ -12,3 +12,4 @@ export interface ToolchainStatus {
   flutter_sdk_path: string | null;
   java_home: string | null;
 }
+

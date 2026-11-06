@@ -40,3 +40,4 @@ export const useTerminalStore = create<TerminalState>((set) => ({
     set({ activeBottomTab: tab });
   },
 }));
+

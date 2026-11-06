@@ -12,3 +12,4 @@ export interface DiagnosticItem {
   stack?: string;
   timestamp: number;
 }
+

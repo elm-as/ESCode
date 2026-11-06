@@ -136,3 +136,90 @@ pub fn rename_entry(old_path: &str, new_path: &str) -> Result<(), String> {
     fs::rename(source, dest).map_err(|e| format!("Failed to rename entry: {e}"))
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchResult {
+    pub file_path: String,
+    pub file_name: String,
+    pub line_number: usize,
+    pub line_content: String,
+}
+
+pub fn search_in_files(dir_path: &str, query: &str, max_results: usize) -> Result<Vec<SearchResult>, String> {
+    if query.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut results = Vec::new();
+    let root = Path::new(dir_path);
+    if !root.exists() {
+        return Err(format!("Directory does not exist: {dir_path}"));
+    }
+    search_recursive(root, query, &mut results, max_results)?;
+    Ok(results)
+}
+
+fn search_recursive(
+    path: &Path,
+    query: &str,
+    results: &mut Vec<SearchResult>,
+    max_results: usize,
+) -> Result<(), String> {
+    if results.len() >= max_results {
+        return Ok(());
+    }
+    let entries = match fs::read_dir(path) {
+        Ok(e) => e,
+        Err(_) => return Ok(()),
+    };
+    for entry in entries.flatten() {
+        if results.len() >= max_results {
+            break;
+        }
+        let p = entry.path();
+        let name = entry.file_name().to_string_lossy().to_string();
+        if is_ignored_directory(&name) {
+            continue;
+        }
+        if p.is_dir() {
+            search_recursive(&p, query, results, max_results)?;
+        } else if is_searchable_file(&name) {
+            search_file_lines(&p, &name, query, results, max_results);
+        }
+    }
+    Ok(())
+}
+
+fn search_file_lines(
+    file_path: &Path,
+    file_name: &str,
+    query: &str,
+    results: &mut Vec<SearchResult>,
+    max_results: usize,
+) {
+    let content = match fs::read_to_string(file_path) {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+    let query_lower = query.to_lowercase();
+    for (idx, line) in content.lines().enumerate() {
+        if results.len() >= max_results {
+            break;
+        }
+        if line.to_lowercase().contains(&query_lower) {
+            results.push(SearchResult {
+                file_path: file_path.to_string_lossy().to_string(),
+                file_name: file_name.to_string(),
+                line_number: idx + 1,
+                line_content: line.trim().to_string(),
+            });
+        }
+    }
+}
+
+fn is_searchable_file(name: &str) -> bool {
+    matches!(
+        name.split('.').last().unwrap_or(""),
+        "ts" | "tsx" | "js" | "jsx" | "dart" | "kt" | "kts" | "json" | "html" | "css" | "xml" | "yaml" | "yml" | "md"
+    )
+}
+
+

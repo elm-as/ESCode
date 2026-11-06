@@ -168,3 +168,4 @@ function detectLanguageFromFileName(fileName: string): string {
       return "plaintext";
   }
 }
+

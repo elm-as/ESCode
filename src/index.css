@@ -1,4 +1,20 @@
 @import "tailwindcss";
+@import "dockview/dist/styles/dockview.css";
+
+.dockview-theme-dark {
+  --dv-drag-over-background-color: rgba(56, 189, 248, 0.15);
+  --dv-drag-over-border-color: #38bdf8;
+  --dv-tabs-and-actions-container-background-color: #18181b;
+  --dv-activegroup-visiblepanel-tab-background-color: #09090b;
+  --dv-inactivegroup-visiblepanel-tab-background-color: #121214;
+  --dv-tab-background-color: #18181b;
+  --dv-activegroup-hiddenpanel-tab-background-color: #18181b;
+  --dv-tab-divider-color: #27272a;
+  --dv-paneview-active-outline-color: #38bdf8;
+  --dv-separator-border: #27272a;
+  --dv-activegroup-visiblepanel-tab-color: #38bdf8;
+  --dv-inactivegroup-visiblepanel-tab-color: #a1a1aa;
+}
 
 @layer base {
   :root {

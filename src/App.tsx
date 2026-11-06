@@ -7,15 +7,15 @@ import { useSdkStore } from "./domains/sdk/sdk-store";
 import { useTerminalStore } from "./domains/terminal/terminal-store";
 import { useDiagnosticsStore } from "./domains/diagnostics/diagnostics-store";
 import { adapterManager } from "./domains/adapters/adapter-manager";
+import { ActivityBar, SidebarTab } from "./domains/shell/ActivityBar";
 import { FileExplorer } from "./domains/projects/FileExplorer";
-import { EditorView } from "./domains/editor/EditorView";
-import { VirtualDeviceSurface } from "./domains/preview/VirtualDeviceSurface";
-import { BottomPanel } from "./domains/terminal/BottomPanel";
+import { SearchPanel } from "./domains/projects/SearchPanel";
+import { GitPanel } from "./domains/projects/GitPanel";
+import { IdeDockviewWorkspace } from "./domains/shell/IdeDockviewWorkspace";
 import { SdkManagerModal } from "./domains/sdk/SdkManagerModal";
 import {
   FolderOpen,
   Layers,
-  Terminal,
   Play,
   Square,
   AlertCircle,
@@ -40,7 +40,7 @@ export const App: React.FC = () => {
   const { appendLog } = useTerminalStore();
   const { items, addDiagnostic } = useDiagnosticsStore();
 
-  const [isBottomOpen, setIsBottomOpen] = useState(true);
+  const [activeSidebarTab, setActiveSidebarTab] = useState<SidebarTab>("explorer");
   const [isOpenFolderDialogOpen, setIsOpenFolderDialogOpen] = useState(false);
   const [folderPathInput, setFolderPathInput] = useState("");
 
@@ -49,7 +49,6 @@ export const App: React.FC = () => {
     loadRecentProjects();
     scanSdk();
 
-    // Listen to real-time process outputs emitted by Rust process orchestrator
     const unlistenPromise = listen<ProcessOutputPayload>("process_output", (event) => {
       const { process_id, stream, line } = event.payload;
       appendLog(process_id, stream, line);
@@ -92,7 +91,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-zinc-950 text-zinc-100 font-sans select-none overflow-hidden">
-      {/* 1. IDE Top Menu Header */}
+      {/* 1. Header Toolbar */}
       <header className="h-10 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-3 text-xs shrink-0 z-20">
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-1.5 font-bold tracking-wider text-sky-400">
@@ -102,7 +101,6 @@ export const App: React.FC = () => {
 
           <div className="h-4 w-px bg-zinc-800" />
 
-          {/* Open Folder Button */}
           <button
             onClick={() => setIsOpenFolderDialogOpen(true)}
             className="flex items-center space-x-1 px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-750 text-zinc-300 hover:text-white transition-colors"
@@ -111,7 +109,6 @@ export const App: React.FC = () => {
             <span>Open Folder</span>
           </button>
 
-          {/* Active Workspace / Framework Pill */}
           {currentPath && (
             <div className="flex items-center space-x-1.5 text-zinc-400 font-mono text-[11px] bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">
               <span className="text-zinc-200 font-medium">{projectName}</span>
@@ -144,7 +141,6 @@ export const App: React.FC = () => {
             </button>
           )}
 
-          {/* Mode Selector Pill */}
           <div className="flex items-center bg-zinc-950 p-0.5 rounded border border-zinc-800 text-[11px]">
             <button
               onClick={() => setPreviewMode("fast")}
@@ -183,37 +179,34 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* 2. Main Workspace Body (3-pane layout) */}
+      {/* 2. Main Workspace Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Pane: Explorer (width 260px) */}
-        <aside className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col shrink-0">
-          <FileExplorer />
-        </aside>
+        {/* Activity Bar */}
+        <ActivityBar
+          activeTab={activeSidebarTab}
+          onSelectTab={setActiveSidebarTab}
+          onOpenSdkModal={() => setOpenModal(true)}
+        />
 
-        {/* Center Pane: Editor + Bottom Panel */}
-        <main className="flex-1 flex flex-col min-w-0 bg-zinc-950 overflow-hidden">
-          <div className="flex-1 min-h-0">
-            <EditorView />
-          </div>
+        {/* Primary Sidebar Drawer (Collapsible) */}
+        {activeSidebarTab && (
+          <aside className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col shrink-0">
+            {activeSidebarTab === "explorer" && <FileExplorer />}
+            {activeSidebarTab === "search" && <SearchPanel />}
+            {activeSidebarTab === "git" && <GitPanel />}
+          </aside>
+        )}
 
-          {/* Collapsible Bottom Panel */}
-          {isBottomOpen && (
-            <div className="h-56 shrink-0">
-              <BottomPanel onClose={() => setIsBottomOpen(false)} />
-            </div>
-          )}
-        </main>
-
-        {/* Right Pane: Virtual Mobile Device Surface (width 440px) */}
-        <aside className="w-[440px] bg-zinc-925 border-l border-zinc-800 flex flex-col shrink-0">
-          <VirtualDeviceSurface
+        {/* Professional Dockview Multi-pane Workspace */}
+        <main className="flex-1 flex min-w-0 bg-zinc-950 overflow-hidden">
+          <IdeDockviewWorkspace
             onStartProject={handleStartProject}
             onStopProject={handleStopProject}
           />
-        </aside>
+        </main>
       </div>
 
-      {/* 3. Bottom Status Bar */}
+      {/* 3. Status Bar */}
       <footer className="h-6 bg-zinc-900 border-t border-zinc-800 flex items-center justify-between px-3 text-[11px] text-zinc-400 shrink-0 z-20 font-mono">
         <div className="flex items-center space-x-3">
           <span className="flex items-center space-x-1 text-sky-400">
@@ -230,20 +223,12 @@ export const App: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setIsBottomOpen(!isBottomOpen)}
-            className="flex items-center space-x-1 hover:text-zinc-200"
-          >
-            <Terminal className="w-3 h-3" />
-            <span>Panel</span>
-            {items.length > 0 && (
-              <span className="text-red-400 flex items-center ml-1">
-                <AlertCircle className="w-3 h-3 mr-0.5" />
-                {items.length}
-              </span>
-            )}
-          </button>
-          <div className="h-3 w-px bg-zinc-800" />
+          {items.length > 0 && (
+            <span className="text-red-400 flex items-center">
+              <AlertCircle className="w-3 h-3 mr-1" />
+              <span>{items.length} problems</span>
+            </span>
+          )}
           <span className="tabular-nums">
             Ln {cursor.lineNumber}, Col {cursor.column}
           </span>

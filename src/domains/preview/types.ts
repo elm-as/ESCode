@@ -20,3 +20,4 @@ export interface PreviewBridgeMessage {
   colno?: number;
   stack?: string;
 }
+

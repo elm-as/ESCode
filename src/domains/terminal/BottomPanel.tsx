@@ -115,3 +115,4 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({ onClose }) => {
     </div>
   );
 };
+

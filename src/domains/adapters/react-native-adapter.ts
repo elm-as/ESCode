@@ -108,3 +108,4 @@ export class ReactNativeAdapter implements IFrameworkAdapter {
     };
   }
 }
+

@@ -57,6 +57,12 @@ pub fn fs_rename(old_path: String, new_path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn fs_search_files(path: String, query: String) -> Result<Vec<filesystem::SearchResult>, String> {
+    filesystem::search_in_files(&path, &query, 100)
+}
+
+
+#[tauri::command]
 pub fn db_set_setting(key: String, value: String, state: State<'_, AppState>) -> Result<(), String> {
     state.db.set_setting(&key, &value)
 }

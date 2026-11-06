@@ -58,6 +58,7 @@ pub fn run() {
             commands::process_start,
             commands::process_stop,
             commands::process_get_status,
+            commands::fs_search_files,
             commands::detect_project_type,
         ])
         .build(tauri::generate_context!())
