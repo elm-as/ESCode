@@ -47,13 +47,13 @@ function activate(context) {
     // 1. Register Webview View in Activity Bar
     context.subscriptions.push(vscode.window.registerWebviewViewProvider(DevicePreviewViewProvider_1.DevicePreviewViewProvider.viewType, previewProvider));
     // 2. Register Commands
-    context.subscriptions.push(vscode.commands.registerCommand("elmasStudio.openPreview", () => {
-        previewProvider.openAsPanel(context.extensionUri);
-    }), vscode.commands.registerCommand("elmasStudio.runProject", () => {
-        previewProvider.runCurrentProject();
+    context.subscriptions.push(vscode.commands.registerCommand("elmasStudio.openPreview", async () => {
+        await previewProvider.openAsPanel(context.extensionUri);
+    }), vscode.commands.registerCommand("elmasStudio.runProject", async () => {
+        await previewProvider.runCurrentProject();
         updateStatusBar(true);
-    }), vscode.commands.registerCommand("elmasStudio.stopProject", () => {
-        previewProvider.stopCurrentProject();
+    }), vscode.commands.registerCommand("elmasStudio.stopProject", async () => {
+        await previewProvider.stopCurrentProject();
         updateStatusBar(false);
     }), vscode.commands.registerCommand("elmasStudio.openSdkManager", async () => {
         const toolchain = await sdk_detector_1.sdkDetector.scanToolchain();

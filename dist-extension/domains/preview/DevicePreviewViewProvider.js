@@ -35,6 +35,8 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DevicePreviewViewProvider = void 0;
 const vscode = __importStar(require("vscode"));
+const path = __importStar(require("path"));
+const fs = __importStar(require("fs"));
 const device_profiles_1 = require("./device-profiles");
 const get_device_html_1 = require("./get-device-html");
 const adapter_manager_1 = require("../adapters/adapter-manager");
@@ -55,17 +57,55 @@ class DevicePreviewViewProvider {
         webviewView.webview.onDidReceiveMessage((msg) => this.handleMessage(msg));
         this.updateWebview(webviewView.webview);
     }
-    openAsPanel(extensionUri) {
+    async openAsPanel(extensionUri) {
         if (this.currentPanel) {
-            this.currentPanel.reveal(vscode.ViewColumn.Beside);
+            this.currentPanel.reveal(vscode.ViewColumn.Two);
             return;
         }
-        this.currentPanel = vscode.window.createWebviewPanel("elmasStudio.devicePreviewPanel", "Mobile Live Preview", vscode.ViewColumn.Beside, { enableScripts: true, retainContextWhenHidden: true });
+        await this.ensureCodeEditorInLeftColumn();
+        this.currentPanel = vscode.window.createWebviewPanel("elmasStudio.devicePreviewPanel", "Mobile Live Preview", vscode.ViewColumn.Two, { enableScripts: true, retainContextWhenHidden: true });
         this.currentPanel.onDidDispose(() => {
             this.currentPanel = undefined;
         });
         this.currentPanel.webview.onDidReceiveMessage((msg) => this.handleMessage(msg));
         this.updateWebview(this.currentPanel.webview);
+    }
+    async ensureCodeEditorInLeftColumn() {
+        const openEditors = vscode.window.visibleTextEditors;
+        if (openEditors.some((ed) => ed.viewColumn === vscode.ViewColumn.One)) {
+            return;
+        }
+        const folders = vscode.workspace.workspaceFolders;
+        if (!folders || folders.length === 0) {
+            return;
+        }
+        const rootPath = folders[0].uri.fsPath;
+        const candidates = [
+            "src/App.tsx",
+            "src/App.jsx",
+            "src/main.tsx",
+            "src/main.jsx",
+            "lib/main.dart",
+            "src/main/kotlin/Main.kt",
+            "index.html",
+            "package.json",
+        ];
+        for (const relPath of candidates) {
+            const fullPath = path.join(rootPath, relPath);
+            if (fs.existsSync(fullPath)) {
+                try {
+                    const doc = await vscode.workspace.openTextDocument(fullPath);
+                    await vscode.window.showTextDocument(doc, {
+                        viewColumn: vscode.ViewColumn.One,
+                        preview: false,
+                    });
+                    return;
+                }
+                catch {
+                    // Continue scanning next candidate
+                }
+            }
+        }
     }
     handleMessage(msg) {
         switch (msg.type) {
@@ -107,8 +147,11 @@ class DevicePreviewViewProvider {
     async runCurrentProject() {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) {
-            vscode.window.showErrorMessage("Please open a project folder in VSCodium first.");
+            vscode.window.showErrorMessage("Please open a project folder in Elmas Studio first.");
             return;
+        }
+        if (!this.currentPanel && !this.currentView) {
+            await this.openAsPanel(vscode.Uri.file(""));
         }
         const rootPath = workspaceFolders[0].uri.fsPath;
         this.status = "starting";
@@ -118,7 +161,7 @@ class DevicePreviewViewProvider {
             this.previewUrl = result.previewUrl;
             this.status = "running";
             this.refreshWebviews();
-            vscode.window.showInformationMessage(`Elmas Studio: Mobile preview running on ${result.previewUrl}`);
+            vscode.window.showInformationMessage(`Elmas Studio: Preview running on ${result.previewUrl}`);
         }
         catch (err) {
             const msg = err instanceof Error ? err.message : String(err);

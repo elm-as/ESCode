@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+import * as path from "path";
+import * as fs from "fs";
 import {
   DeviceOrientation,
   DeviceProfile,
@@ -33,16 +35,18 @@ export class DevicePreviewViewProvider implements vscode.WebviewViewProvider {
     this.updateWebview(webviewView.webview);
   }
 
-  openAsPanel(extensionUri: vscode.Uri): void {
+  async openAsPanel(extensionUri: vscode.Uri): Promise<void> {
     if (this.currentPanel) {
-      this.currentPanel.reveal(vscode.ViewColumn.Beside);
+      this.currentPanel.reveal(vscode.ViewColumn.Two);
       return;
     }
+
+    await this.ensureCodeEditorInLeftColumn();
 
     this.currentPanel = vscode.window.createWebviewPanel(
       "elmasStudio.devicePreviewPanel",
       "Mobile Live Preview",
-      vscode.ViewColumn.Beside,
+      vscode.ViewColumn.Two,
       { enableScripts: true, retainContextWhenHidden: true }
     );
 
@@ -52,6 +56,46 @@ export class DevicePreviewViewProvider implements vscode.WebviewViewProvider {
 
     this.currentPanel.webview.onDidReceiveMessage((msg) => this.handleMessage(msg));
     this.updateWebview(this.currentPanel.webview);
+  }
+
+  private async ensureCodeEditorInLeftColumn(): Promise<void> {
+    const openEditors = vscode.window.visibleTextEditors;
+    if (openEditors.some((ed) => ed.viewColumn === vscode.ViewColumn.One)) {
+      return;
+    }
+
+    const folders = vscode.workspace.workspaceFolders;
+    if (!folders || folders.length === 0) {
+      return;
+    }
+
+    const rootPath = folders[0].uri.fsPath;
+    const candidates = [
+      "src/App.tsx",
+      "src/App.jsx",
+      "src/main.tsx",
+      "src/main.jsx",
+      "lib/main.dart",
+      "src/main/kotlin/Main.kt",
+      "index.html",
+      "package.json",
+    ];
+
+    for (const relPath of candidates) {
+      const fullPath = path.join(rootPath, relPath);
+      if (fs.existsSync(fullPath)) {
+        try {
+          const doc = await vscode.workspace.openTextDocument(fullPath);
+          await vscode.window.showTextDocument(doc, {
+            viewColumn: vscode.ViewColumn.One,
+            preview: false,
+          });
+          return;
+        } catch {
+          // Continue scanning next candidate
+        }
+      }
+    }
   }
 
   private handleMessage(msg: { type: string; value?: any }): void {
@@ -98,8 +142,12 @@ export class DevicePreviewViewProvider implements vscode.WebviewViewProvider {
   async runCurrentProject(): Promise<void> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
-      vscode.window.showErrorMessage("Please open a project folder in VSCodium first.");
+      vscode.window.showErrorMessage("Please open a project folder in Elmas Studio first.");
       return;
+    }
+
+    if (!this.currentPanel && !this.currentView) {
+      await this.openAsPanel(vscode.Uri.file(""));
     }
 
     const rootPath = workspaceFolders[0].uri.fsPath;
@@ -111,7 +159,7 @@ export class DevicePreviewViewProvider implements vscode.WebviewViewProvider {
       this.previewUrl = result.previewUrl;
       this.status = "running";
       this.refreshWebviews();
-      vscode.window.showInformationMessage(`Elmas Studio: Mobile preview running on ${result.previewUrl}`);
+      vscode.window.showInformationMessage(`Elmas Studio: Preview running on ${result.previewUrl}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.status = "error";
@@ -150,4 +198,3 @@ export class DevicePreviewViewProvider implements vscode.WebviewViewProvider {
     });
   }
 }
-

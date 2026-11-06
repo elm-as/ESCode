@@ -77,8 +77,9 @@ if (-not (Test-Path $userSettingsDir)) {
 }
 
 $settings = @{
-  "workbench.colorTheme" = "Default Dark Modern";
+  "workbench.colorTheme" = "Dark Modern";
   "workbench.startupEditor" = "none";
+  "workbench.editor.openSideBySideDirection" = "right";
   "workbench.activityBar.location" = "default";
   "elmasStudio.sdkPaths.androidSdk" = "C:\Users\elmas\AppData\Local\Android\Sdk";
 }

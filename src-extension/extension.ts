@@ -20,15 +20,15 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // 2. Register Commands
   context.subscriptions.push(
-    vscode.commands.registerCommand("elmasStudio.openPreview", () => {
-      previewProvider.openAsPanel(context.extensionUri);
+    vscode.commands.registerCommand("elmasStudio.openPreview", async () => {
+      await previewProvider.openAsPanel(context.extensionUri);
     }),
-    vscode.commands.registerCommand("elmasStudio.runProject", () => {
-      previewProvider.runCurrentProject();
+    vscode.commands.registerCommand("elmasStudio.runProject", async () => {
+      await previewProvider.runCurrentProject();
       updateStatusBar(true);
     }),
-    vscode.commands.registerCommand("elmasStudio.stopProject", () => {
-      previewProvider.stopCurrentProject();
+    vscode.commands.registerCommand("elmasStudio.stopProject", async () => {
+      await previewProvider.stopCurrentProject();
       updateStatusBar(false);
     }),
     vscode.commands.registerCommand("elmasStudio.openSdkManager", async () => {

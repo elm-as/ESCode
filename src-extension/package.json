@@ -1,0 +1,82 @@
+{
+  "name": "elmas-studio-core",
+  "displayName": "Elmas Studio Mobile Core",
+  "description": "Multi-framework mobile UI live preview engine for React Web, React Native, Flutter, and Kotlin Compose",
+  "version": "1.0.0",
+  "publisher": "elmascore",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "elmas-studio-container",
+          "title": "Elmas Studio",
+          "icon": "media/device-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "elmas-studio-container": [
+        {
+          "type": "webview",
+          "id": "elmasStudio.devicePreview",
+          "name": "Mobile Virtual Device"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "elmasStudio.openPreview",
+        "title": "Open Mobile Preview",
+        "category": "Elmas Studio",
+        "icon": "$(device-mobile)"
+      },
+      {
+        "command": "elmasStudio.runProject",
+        "title": "Run Mobile Preview",
+        "category": "Elmas Studio",
+        "icon": "$(play)"
+      },
+      {
+        "command": "elmasStudio.stopProject",
+        "title": "Stop Preview Server",
+        "category": "Elmas Studio",
+        "icon": "$(primitive-square)"
+      },
+      {
+        "command": "elmasStudio.openSdkManager",
+        "title": "Open SDK & Toolchain Manager",
+        "category": "Elmas Studio"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "elmasStudio.openPreview",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Elmas Studio",
+      "properties": {
+        "elmasStudio.sdkPaths.androidSdk": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to Android SDK directory"
+        },
+        "elmasStudio.sdkPaths.flutterSdk": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to Flutter SDK directory"
+        }
+      }
+    }
+  }
+}

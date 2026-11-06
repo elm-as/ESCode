@@ -34,17 +34,20 @@
       {
         "command": "elmasStudio.openPreview",
         "title": "Open Mobile Preview",
-        "category": "Elmas Studio"
+        "category": "Elmas Studio",
+        "icon": "$(device-mobile)"
       },
       {
         "command": "elmasStudio.runProject",
         "title": "Run Mobile Preview",
-        "category": "Elmas Studio"
+        "category": "Elmas Studio",
+        "icon": "$(play)"
       },
       {
         "command": "elmasStudio.stopProject",
         "title": "Stop Preview Server",
-        "category": "Elmas Studio"
+        "category": "Elmas Studio",
+        "icon": "$(primitive-square)"
       },
       {
         "command": "elmasStudio.openSdkManager",
@@ -52,6 +55,14 @@
         "category": "Elmas Studio"
       }
     ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "elmasStudio.openPreview",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "Elmas Studio",
       "properties": {
@@ -64,19 +75,8 @@
           "type": "string",
           "default": "",
           "description": "Custom path to Flutter SDK directory"
-        },
-        "elmasStudio.sdkPaths.javaHome": {
-          "type": "string",
-          "default": "",
-          "description": "Custom path to Java JDK Home"
-        },
-        "elmasStudio.sdkPaths.adbPath": {
-          "type": "string",
-          "default": "",
-          "description": "Custom path to Android ADB executable"
         }
       }
     }
   }
 }
-
