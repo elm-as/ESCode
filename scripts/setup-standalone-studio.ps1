@@ -60,8 +60,8 @@ if (-not (Test-Path $extDir)) {
 }
 Copy-Item -Path "dist-extension\*" -Destination $extDir -Recurse -Force
 
-# 6. Customize product.json and settings.json
-Write-Host "[6/6] Applying Elmas Studio branding and default workspace..." -ForegroundColor Yellow
+# 6. Customize product.json, French language pack, and Elmas Amber Forge branding
+Write-Host "[6/6] Applying Elmas Studio branding, French locale, and Amber Forge theme..." -ForegroundColor Yellow
 $productJsonPath = Join-Path $DestinationDir "resources\app\product.json"
 if (Test-Path $productJsonPath) {
   $product = Get-Content $productJsonPath -Raw | ConvertFrom-Json
@@ -71,19 +71,8 @@ if (Test-Path $productJsonPath) {
   $product | ConvertTo-Json -Depth 15 | Set-Content $productJsonPath
 }
 
-$userSettingsDir = Join-Path $DestinationDir "data\user-data\User"
-if (-not (Test-Path $userSettingsDir)) {
-  New-Item -ItemType Directory -Force -Path $userSettingsDir | Out-Null
-}
-
-$settings = @{
-  "workbench.colorTheme" = "Dark Modern";
-  "workbench.startupEditor" = "none";
-  "workbench.editor.openSideBySideDirection" = "right";
-  "workbench.activityBar.location" = "default";
-  "elmasStudio.sdkPaths.androidSdk" = "C:\Users\elmas\AppData\Local\Android\Sdk";
-}
-$settings | ConvertTo-Json | Set-Content (Join-Path $userSettingsDir "settings.json")
+& (Join-Path $DestinationDir "bin\codium.cmd") --install-extension MS-CEINTL.vscode-language-pack-fr
+node scripts/apply-elmas-branding.mjs
 
 Write-Host "==========================================" -ForegroundColor Green
 Write-Host "  BUILD COMPLETE!" -ForegroundColor Green

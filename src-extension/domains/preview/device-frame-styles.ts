@@ -127,8 +127,13 @@ export function getDeviceFrameStyles(width: number, height: number): string {
       stroke-width: 1.8;
     }
     .pill-btn.run-active {
-      color: #4ade80;
-      border-color: rgba(74, 222, 128, 0.25);
+      color: #f59e0b;
+      border-color: rgba(245, 158, 11, 0.35);
+      background: rgba(217, 119, 6, 0.12);
+    }
+    .pill-btn.run-idle {
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.35);
     }
 
     /* Viewport Canvas — Zero Scrollbar, True Centering */

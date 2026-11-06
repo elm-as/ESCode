@@ -1,7 +1,7 @@
 {
   "name": "elmas-studio-core",
-  "displayName": "Elmas Studio Mobile Core",
-  "description": "Multi-framework mobile UI live preview engine for React Web, React Native, Flutter, and Kotlin Compose",
+  "displayName": "Elmas Studio — Moteur Mobile",
+  "description": "Aperçu mobile en temps réel multi-frameworks pour HTML/CSS/JS, React Web, React Native, Flutter et Kotlin Compose",
   "version": "1.0.0",
   "publisher": "elmascore",
   "engines": {
@@ -26,32 +26,32 @@
         {
           "type": "webview",
           "id": "elmasStudio.devicePreview",
-          "name": "Mobile Virtual Device"
+          "name": "Appareil Mobile Virtuel"
         }
       ]
     },
     "commands": [
       {
         "command": "elmasStudio.openPreview",
-        "title": "Open Mobile Preview",
+        "title": "Ouvrir l'Aperçu Mobile",
         "category": "Elmas Studio",
         "icon": "$(device-mobile)"
       },
       {
         "command": "elmasStudio.runProject",
-        "title": "Run Mobile Preview",
+        "title": "Lancer l'Aperçu Mobile",
         "category": "Elmas Studio",
         "icon": "$(play)"
       },
       {
         "command": "elmasStudio.stopProject",
-        "title": "Stop Preview Server",
+        "title": "Arrêter le Serveur d'Aperçu",
         "category": "Elmas Studio",
         "icon": "$(primitive-square)"
       },
       {
         "command": "elmasStudio.openSdkManager",
-        "title": "Open SDK & Toolchain Manager",
+        "title": "Gestionnaire SDK & Outils",
         "category": "Elmas Studio"
       }
     ],
@@ -69,12 +69,12 @@
         "elmasStudio.sdkPaths.androidSdk": {
           "type": "string",
           "default": "",
-          "description": "Custom path to Android SDK directory"
+          "description": "Chemin personnalisé vers le dossier Android SDK"
         },
         "elmasStudio.sdkPaths.flutterSdk": {
           "type": "string",
           "default": "",
-          "description": "Custom path to Flutter SDK directory"
+          "description": "Chemin personnalisé vers le dossier Flutter SDK"
         }
       }
     }

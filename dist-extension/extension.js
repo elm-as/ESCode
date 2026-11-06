@@ -44,8 +44,8 @@ let runStatusBarItem;
 let modeStatusBarItem;
 function activate(context) {
     previewProvider = new DevicePreviewViewProvider_1.DevicePreviewViewProvider();
-    // 1. Register Webview View in Activity Bar
-    context.subscriptions.push(vscode.window.registerWebviewViewProvider(DevicePreviewViewProvider_1.DevicePreviewViewProvider.viewType, previewProvider));
+    // 1. Register Webview View & Panel Serializer (restores panel on reload)
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider(DevicePreviewViewProvider_1.DevicePreviewViewProvider.viewType, previewProvider), vscode.window.registerWebviewPanelSerializer("elmasStudio.devicePreviewPanel", previewProvider));
     // 2. Register Commands
     context.subscriptions.push(vscode.commands.registerCommand("elmasStudio.openPreview", async () => {
         await previewProvider.openAsPanel(context.extensionUri);
@@ -59,24 +59,24 @@ function activate(context) {
         const toolchain = await sdk_detector_1.sdkDetector.scanToolchain();
         const items = toolchain.tools.map((t) => ({
             label: `${t.installed ? "$(check)" : "$(x)"} ${t.name}`,
-            description: t.version || (t.installed ? "Ready" : "Missing"),
-            detail: t.path || `Required for: ${t.requiredFor.join(", ")}`,
+            description: t.version || (t.installed ? "Installé" : "Manquant"),
+            detail: t.path || `Requis pour : ${t.requiredFor.join(", ")}`,
         }));
         vscode.window.showQuickPick(items, {
-            placeHolder: "Elmas Studio — Installed Toolchain & SDK Status",
+            placeHolder: "Elmas Studio — État des SDK & Outils de développement",
         });
     }));
-    // 3. Register Status Bar Items
+    // 3. Register Status Bar Items (French)
     runStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     runStatusBarItem.command = "elmasStudio.runProject";
-    runStatusBarItem.text = "$(play) Run Preview";
-    runStatusBarItem.tooltip = "Start mobile development preview";
+    runStatusBarItem.text = "$(play) Lancer l'Aperçu";
+    runStatusBarItem.tooltip = "Démarrer le serveur d'aperçu mobile en temps réel";
     runStatusBarItem.show();
     context.subscriptions.push(runStatusBarItem);
     modeStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 99);
     modeStatusBarItem.command = "elmasStudio.openPreview";
-    modeStatusBarItem.text = "$(device-mobile) Mobile Preview";
-    modeStatusBarItem.tooltip = "Open Elmas Studio Mobile Virtual Device";
+    modeStatusBarItem.text = "$(device-mobile) Aperçu Mobile";
+    modeStatusBarItem.tooltip = "Ouvrir l'appareil mobile virtuel Elmas Studio";
     modeStatusBarItem.show();
     context.subscriptions.push(modeStatusBarItem);
     // Auto-detect project on folder open
@@ -85,7 +85,7 @@ function activate(context) {
         adapter_manager_1.adapterManager.detectWorkspaceFramework(folders[0].uri.fsPath).then((fw) => {
             if (fw !== "unknown") {
                 const label = fw === "vanilla_web" ? "HTML / CSS / JS" : fw.toUpperCase();
-                vscode.window.showInformationMessage(`Elmas Studio: Detected ${label} project. Ready for mobile preview.`);
+                vscode.window.showInformationMessage(`Elmas Studio : Projet ${label} détecté. Prêt pour l'aperçu mobile.`);
             }
         });
     }
@@ -97,13 +97,13 @@ function activate(context) {
 function updateStatusBar(isRunning) {
     if (isRunning) {
         runStatusBarItem.command = "elmasStudio.stopProject";
-        runStatusBarItem.text = "$(primitive-square) Stop Preview";
-        runStatusBarItem.tooltip = "Stop mobile development server";
+        runStatusBarItem.text = "$(primitive-square) Arrêter l'Aperçu";
+        runStatusBarItem.tooltip = "Arrêter le serveur d'aperçu mobile";
     }
     else {
         runStatusBarItem.command = "elmasStudio.runProject";
-        runStatusBarItem.text = "$(play) Run Preview";
-        runStatusBarItem.tooltip = "Start mobile development preview";
+        runStatusBarItem.text = "$(play) Lancer l'Aperçu";
+        runStatusBarItem.tooltip = "Démarrer le serveur d'aperçu mobile en temps réel";
     }
 }
 function deactivate() {

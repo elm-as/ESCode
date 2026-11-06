@@ -57,6 +57,19 @@ class DevicePreviewViewProvider {
         webviewView.webview.onDidReceiveMessage((msg) => this.handleMessage(msg));
         this.updateWebview(webviewView.webview);
     }
+    async deserializeWebviewPanel(webviewPanel, _state) {
+        this.currentPanel = webviewPanel;
+        webviewPanel.title = "Aperçu Mobile";
+        webviewPanel.webview.options = { enableScripts: true };
+        webviewPanel.onDidDispose(() => {
+            this.currentPanel = undefined;
+        });
+        webviewPanel.webview.onDidReceiveMessage((msg) => this.handleMessage(msg));
+        this.updateWebview(webviewPanel.webview);
+        if (this.status === "idle") {
+            await this.runCurrentProject();
+        }
+    }
     async openAsPanel(_extensionUri) {
         if (this.currentPanel) {
             this.currentPanel.reveal(vscode.ViewColumn.Two);
@@ -66,7 +79,7 @@ class DevicePreviewViewProvider {
             return;
         }
         await this.ensureCodeEditorInLeftColumn();
-        this.currentPanel = vscode.window.createWebviewPanel("elmasStudio.devicePreviewPanel", "Mobile Live Preview", vscode.ViewColumn.Two, { enableScripts: true, retainContextWhenHidden: true });
+        this.currentPanel = vscode.window.createWebviewPanel("elmasStudio.devicePreviewPanel", "Aperçu Mobile", vscode.ViewColumn.Two, { enableScripts: true, retainContextWhenHidden: true });
         this.currentPanel.onDidDispose(() => {
             this.currentPanel = undefined;
         });
@@ -140,7 +153,7 @@ class DevicePreviewViewProvider {
                 vscode.commands.executeCommand("elmasStudio.openSdkManager");
                 break;
             case "screenshot":
-                vscode.window.showInformationMessage("Elmas Studio: Mobile screen snapshot captured.");
+                vscode.window.showInformationMessage("Elmas Studio : Capture d'écran mobile enregistrée.");
                 break;
         }
     }
@@ -162,11 +175,12 @@ class DevicePreviewViewProvider {
     async runCurrentProject() {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) {
-            vscode.window.showErrorMessage("Please open a project folder in Elmas Studio first.");
+            vscode.window.showErrorMessage("Veuillez d'abord ouvrir un dossier de projet dans Elmas Studio.");
             return;
         }
         if (!this.currentPanel && !this.currentView) {
             await this.openAsPanel(vscode.Uri.file(""));
+            return;
         }
         const rootPath = workspaceFolders[0].uri.fsPath;
         this.status = "starting";
@@ -176,14 +190,14 @@ class DevicePreviewViewProvider {
             this.previewUrl = result.previewUrl;
             this.status = "running";
             this.refreshWebviews();
-            vscode.window.showInformationMessage(`Elmas Studio: Preview running on ${result.previewUrl}`);
+            vscode.window.showInformationMessage(`Elmas Studio : Aperçu actif sur ${result.previewUrl}`);
         }
         catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             this.status = "error";
             this.errorMessage = msg;
             this.refreshWebviews();
-            vscode.window.showErrorMessage(`Elmas Studio: ${msg}`);
+            vscode.window.showErrorMessage(`Elmas Studio : ${msg}`);
         }
     }
     async stopCurrentProject() {
@@ -191,7 +205,7 @@ class DevicePreviewViewProvider {
         this.status = "idle";
         this.previewUrl = null;
         this.refreshWebviews();
-        vscode.window.showInformationMessage("Elmas Studio: Mobile preview server stopped.");
+        vscode.window.showInformationMessage("Elmas Studio : Serveur d'aperçu mobile arrêté.");
     }
     refreshWebviews() {
         if (this.currentView) {
