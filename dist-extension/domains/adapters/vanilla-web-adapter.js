@@ -68,6 +68,82 @@ const LIVE_RELOAD_SNIPPET = `
   })();
 </script>
 `;
+function formatHtmlForMobile(rawHtml) {
+    const hasHtmlTag = rawHtml.toLowerCase().includes("<html");
+    const hasViewport = rawHtml.toLowerCase().includes("name=\"viewport\"");
+    if (hasHtmlTag) {
+        let result = rawHtml;
+        if (!hasViewport && result.includes("<head>")) {
+            result = result.replace("<head>", "<head>\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">");
+        }
+        if (result.includes("</body>")) {
+            return result.replace("</body>", `${LIVE_RELOAD_SNIPPET}</body>`);
+        }
+        return result + LIVE_RELOAD_SNIPPET;
+    }
+    return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-color: #09090b;
+      color: #fafafa;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    body { padding: 24px 20px; line-height: 1.5; }
+    h1, h2, h3, h4, h5, h6 {
+      color: #ffffff;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    h1 { font-size: 26px; }
+    h2 { font-size: 20px; }
+    h3 { font-size: 17px; }
+    p {
+      color: #a1a1aa;
+      font-size: 15px;
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+    button {
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:active { opacity: 0.8; }
+    input, textarea, select {
+      background: #18181b;
+      color: #ffffff;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 14px;
+      outline: none;
+      width: 100%;
+    }
+    input:focus, textarea:focus, select:focus { border-color: #38bdf8; }
+  </style>
+</head>
+<body>
+  ${rawHtml}
+  ${LIVE_RELOAD_SNIPPET}
+</body>
+</html>`;
+}
 class VanillaWebAdapter {
     name = "Vanilla Web (HTML/CSS/JS/Wasm)";
     framework = "vanilla_web";
@@ -81,7 +157,6 @@ class VanillaWebAdapter {
         if (!hasIndexHtml && !hasPublicIndex) {
             return false;
         }
-        // Guard: if it has react, vite, flutter, or gradle, let dedicated adapters handle it
         const pkgPath = path.join(projectPath, "package.json");
         if (fs.existsSync(pkgPath)) {
             try {
@@ -172,7 +247,6 @@ class VanillaWebAdapter {
     }
     handleHttpRequest(rootPath, req, res) {
         const rawUrl = req.url || "/";
-        // Handle SSE Live Reload channel
         if (rawUrl === "/__elmas_live_reload") {
             res.writeHead(200, {
                 "Content-Type": "text/event-stream",
@@ -189,13 +263,11 @@ class VanillaWebAdapter {
         }
         const cleanPath = rawUrl.split("?")[0];
         let filePath = path.join(rootPath, cleanPath === "/" ? "index.html" : cleanPath);
-        // Prevent directory traversal
         if (!filePath.startsWith(rootPath)) {
             res.writeHead(403);
             res.end("Forbidden");
             return;
         }
-        // Directory fallback to index.html
         if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
             filePath = path.join(filePath, "index.html");
         }
@@ -208,22 +280,17 @@ class VanillaWebAdapter {
         const mime = MIME_MAP[ext] || "application/octet-stream";
         try {
             if (ext === ".html" || ext === ".htm") {
-                let content = fs.readFileSync(filePath, "utf-8");
-                if (content.includes("</body>")) {
-                    content = content.replace("</body>", `${LIVE_RELOAD_SNIPPET}</body>`);
-                }
-                else {
-                    content += LIVE_RELOAD_SNIPPET;
-                }
+                const rawContent = fs.readFileSync(filePath, "utf-8");
+                const formatted = formatHtmlForMobile(rawContent);
                 res.writeHead(200, { "Content-Type": mime });
-                res.end(content);
+                res.end(formatted);
                 return;
             }
             const stream = fs.createReadStream(filePath);
             res.writeHead(200, { "Content-Type": mime });
             stream.pipe(res);
         }
-        catch (err) {
+        catch {
             res.writeHead(500, { "Content-Type": "text/plain" });
             res.end("Server error reading file");
         }
