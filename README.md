@@ -7,12 +7,13 @@
 
 ## 1. Overview & Vision
 
-**Elmas Studio** is an engineering development environment dedicated to mobile user interface development with immediate visual feedback across four major frameworks:
+**Elmas Studio** is an engineering development environment dedicated to mobile user interface development with immediate visual feedback across five execution targets:
 
-1. **React Web** (Vite HMR fast preview)
-2. **React Native** (Expo Web fast preview + Metro / Android ADB native)
-3. **Flutter** (Flutter Web engine fast preview + Android ART native)
-4. **Kotlin / Jetpack Compose** (Compose Desktop fast preview + Android Gradle native)
+1. **Vanilla Web** (Raw HTML5, CSS3, JavaScript ES6+, WebAssembly — zero config, instant live reload)
+2. **React Web** (Vite HMR fast preview)
+3. **React Native** (Expo Web fast preview + Metro / Android ADB native)
+4. **Flutter** (Flutter Web engine fast preview + Android ART native)
+5. **Kotlin / Jetpack Compose** (Compose Desktop fast preview + Android Gradle native)
 
 ### Core Innovation: Fast Preview vs. Native Preview
 - **FAST PREVIEW**: Zero emulator overhead. Runs lightweight framework web/desktop targets on dynamic ephemeral ports with sub-second HMR. No full Android phone emulator required for UI design and component layout.
@@ -83,7 +84,8 @@ Scar/
 │   ├── domains/                    # Editor, Preview, Projects, SDK, Diagnostics, Terminal
 │   ├── App.tsx                     # Unified 3-pane IDE layout & header
 │   └── index.css                   # High-density engineering design system
-└── test-projects/                   # Standalone sample projects for all 4 frameworks
+└── test-projects/                   # Standalone sample projects for all frameworks
+    ├── vanilla-html-mobile/        # Zero-dep HTML5 / CSS3 / ES6 / Wasm with SSE live reload
     ├── react-web-mobile/           # React 19 + Vite mobile demo (boots in ~600ms)
     ├── react-native-mobile/        # Expo / React Native project structure
     ├── flutter-mobile/             # Flutter project structure (pubspec.yaml & lib/main.dart)
