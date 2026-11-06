@@ -1,6 +1,11 @@
 import { DeviceProfile, DeviceOrientation, PreviewMode, calculateDeviceDimensions } from "./device-profiles";
 import { getDeviceFrameStyles } from "./device-frame-styles";
-import { renderToolbar, renderStandbyScreen, renderStatusBar } from "./device-ui-templates";
+import {
+  renderTopBar,
+  renderFloatingZoom,
+  renderPhoneBezel,
+  renderBottomBar,
+} from "./device-ui-templates";
 
 export interface DeviceHtmlOptions {
   profile: DeviceProfile;
@@ -15,114 +20,97 @@ export interface DeviceHtmlOptions {
 export function generateDeviceHtml(options: DeviceHtmlOptions): string {
   const { width, height } = calculateDeviceDimensions(options.profile, options.orientation);
   const styles = getDeviceFrameStyles(width, height);
-  const toolbarHtml = renderToolbar(options);
-  const statusBarHtml = renderStatusBar();
-  const standbyHtml = renderStandbyScreen(options.status, options.errorMessage);
+  const topBarHtml = renderTopBar(options);
+  const zoomHtml = renderFloatingZoom();
+  const phoneHtml = renderPhoneBezel(options);
+  const bottomBarHtml = renderBottomBar(options);
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Elmas Studio Mobile Virtual Device</title>
+  <title>Elmas Studio</title>
   <style>
     ${styles}
   </style>
 </head>
 <body>
-  ${toolbarHtml}
+  ${topBarHtml}
 
   <div class="viewport-canvas">
+    ${zoomHtml}
+
     <div class="canvas-inner" id="canvas-inner">
-      <div class="device-chassis" id="chassis">
-        <div class="side-key key-action"></div>
-        <div class="side-key key-vol-up"></div>
-        <div class="side-key key-vol-down"></div>
-        <div class="side-key key-power"></div>
-
-        <div class="speaker-earpiece"></div>
-
-        <div class="dynamic-island">
-          <div class="camera-lens"></div>
-          <div class="sensor-dot"></div>
-        </div>
-
-        ${statusBarHtml}
-
-        <div class="screen-surface" id="screen">
-          <div class="glass-sheen"></div>
-          ${
-            options.status === "running" && options.previewUrl
-              ? `<iframe src="${options.previewUrl}" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>`
-              : standbyHtml
-          }
-        </div>
-
-        <div class="nav-gesture-bar"><div class="gesture-pill"></div></div>
-      </div>
-
-      <div class="device-metrics-badge">
-        ${width} × ${height} px • ${options.profile.dpi}x • ${options.orientation.toUpperCase()}
-      </div>
+      ${phoneHtml}
     </div>
   </div>
+
+  ${bottomBarHtml}
 
   <script>
     const vscode = acquireVsCodeApi();
     function sendMsg(type, value) {
+      if (type === 'back') {
+        const frame = document.getElementById('preview-frame');
+        if (frame && frame.contentWindow) { frame.contentWindow.history.back(); return; }
+      }
+      if (type === 'forward') {
+        const frame = document.getElementById('preview-frame');
+        if (frame && frame.contentWindow) { frame.contentWindow.history.forward(); return; }
+      }
       vscode.postMessage({ type, value });
     }
 
-    let zoomMode = "fit";
+    let currentScale = 1.0;
+    let isFitMode = true;
     const canvas = document.querySelector(".viewport-canvas");
     const inner = document.getElementById("canvas-inner");
 
     function applyScale() {
       if (!canvas || !inner) return;
-      if (zoomMode === "fit") {
-        const padX = 40;
-        const padY = 40;
-        const availW = Math.max(canvas.clientWidth - padX, 160);
-        const availH = Math.max(canvas.clientHeight - padY, 160);
-        const devW = ${width} + 36;
-        const devH = ${height} + 66 + 50; // chassis + status/nav + metrics badge
+      if (isFitMode) {
+        const padX = 48;
+        const padY = 48;
+        const availW = Math.max(canvas.clientWidth - padX, 200);
+        const availH = Math.max(canvas.clientHeight - padY, 200);
+        const devW = ${width} + 16;
+        const devH = ${height} + 16;
         const scale = Math.min(availW / devW, availH / devH, 1.0);
+        currentScale = scale;
         inner.style.transform = "scale(" + Math.max(scale, 0.25).toFixed(3) + ")";
       } else {
-        const s = parseFloat(zoomMode);
-        inner.style.transform = "scale(" + s + ")";
+        inner.style.transform = "scale(" + currentScale.toFixed(3) + ")";
       }
     }
 
-    function onZoomChange(val) {
-      zoomMode = val;
+    function adjustZoom(delta) {
+      isFitMode = false;
+      currentScale = Math.min(Math.max(currentScale + delta, 0.3), 2.0);
       applyScale();
     }
 
-    window.addEventListener("resize", applyScale);
-    if (window.ResizeObserver) {
-      new ResizeObserver(applyScale).observe(canvas);
+    function resetZoomFit() {
+      isFitMode = true;
+      applyScale();
     }
-    setTimeout(applyScale, 20);
+
+    window.addEventListener("resize", () => {
+      if (isFitMode) applyScale();
+    });
+    if (window.ResizeObserver) {
+      new ResizeObserver(() => {
+        if (isFitMode) applyScale();
+      }).observe(canvas);
+    }
+    setTimeout(applyScale, 25);
 
     function updateLiveClock() {
       const d = new Date();
       const h = String(d.getHours()).padStart(2, "0");
       const m = String(d.getMinutes()).padStart(2, "0");
-      const timeStr = h + ":" + m;
-
       const clockEl = document.getElementById("clock");
-      if (clockEl) clockEl.textContent = timeStr;
-
-      const lockClockEl = document.getElementById("lock-time");
-      if (lockClockEl) lockClockEl.textContent = timeStr;
-
-      const lockDateEl = document.getElementById("lock-date");
-      if (lockDateEl) {
-        const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-        const months = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
-        lockDateEl.textContent = days[d.getDay()] + " " + d.getDate() + " " + months[d.getMonth()];
-      }
+      if (clockEl) clockEl.textContent = h + ":" + m;
     }
     updateLiveClock();
     setInterval(updateLiveClock, 10000);

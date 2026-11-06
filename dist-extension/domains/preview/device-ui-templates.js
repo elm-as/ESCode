@@ -1,118 +1,113 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.renderToolbar = renderToolbar;
-exports.renderStandbyScreen = renderStandbyScreen;
-exports.renderStatusBar = renderStatusBar;
-function renderToolbar(options) {
+exports.renderTopBar = renderTopBar;
+exports.renderFloatingZoom = renderFloatingZoom;
+exports.renderBottomBar = renderBottomBar;
+exports.renderPhoneBezel = renderPhoneBezel;
+const device_profiles_1 = require("./device-profiles");
+function renderTopBar(options) {
     const isRunning = options.status === "running";
+    const displayUrl = options.previewUrl ? options.previewUrl.replace("http://localhost:", ":") : "/";
     return `
-  <div class="toolbar">
-    <div class="toolbar-left">
-      <div class="mode-segmented">
-        <button class="mode-tab ${options.mode === "fast" ? "active-fast" : ""}" 
-                title="Fast Mode: Lightweight zero-overhead Web & Desktop target" 
-                onclick="sendMsg('setMode', 'fast')">
-          ⚡ FAST
-        </button>
-        <button class="mode-tab ${options.mode === "native" ? "active-native" : ""}" 
-                title="Native Mode: Real Android SDK & ADB execution" 
-                onclick="sendMsg('setMode', 'native')">
-          🤖 NATIVE
-        </button>
-      </div>
-
-      <select class="control-select" onchange="sendMsg('setProfile', this.value)">
-        <option value="flagship-390" ${options.profile.id === "flagship-390" ? "selected" : ""}>Flagship (390×844)</option>
-        <option value="pixel-412" ${options.profile.id === "pixel-412" ? "selected" : ""}>Pixel 8 (412×915)</option>
-        <option value="pro-max-432" ${options.profile.id === "pro-max-432" ? "selected" : ""}>Pro Max (432×960)</option>
-        <option value="standard-375" ${options.profile.id === "standard-375" ? "selected" : ""}>iPhone SE (375×812)</option>
-        <option value="compact-360" ${options.profile.id === "compact-360" ? "selected" : ""}>Compact (360×800)</option>
-      </select>
-
-      <select class="control-select" id="zoom-select" onchange="onZoomChange(this.value)">
-        <option value="fit" selected>Fit (Auto)</option>
-        <option value="0.5">50%</option>
-        <option value="0.75">75%</option>
-        <option value="0.85">85%</option>
-        <option value="1.0">100%</option>
-      </select>
-    </div>
-
-    <div class="toolbar-right">
-      <button class="tool-btn" title="Rotate portrait/landscape" onclick="sendMsg('toggleOrientation')">↻</button>
-      <button class="tool-btn" title="Hard reload" onclick="sendMsg('reload')">⟳</button>
+  <div class="top-bar">
+    <div class="nav-group">
+      <button class="icon-btn" title="Back" onclick="sendMsg('back')">←</button>
+      <button class="icon-btn" title="Forward" onclick="sendMsg('forward')">→</button>
+      <button class="icon-btn" title="Reload preview" onclick="sendMsg('reload')">↻</button>
       
+      <div class="address-pill">
+        <span>🌐</span>
+        <span class="path-text">${displayUrl}</span>
+      </div>
+    </div>
+
+    <div class="nav-group">
       ${isRunning
-        ? `<button class="tool-btn btn-stop" onclick="sendMsg('stopProject')">■ Stop</button>`
-        : `<button class="tool-btn btn-run" onclick="sendMsg('runProject')">▶ Run</button>`}
+        ? `<button class="btn-action-stop" onclick="sendMsg('stopProject')">■ Stop</button>`
+        : `<button class="btn-action-primary" onclick="sendMsg('runProject')">▶ Run</button>`}
+      <button class="btn-logs" title="Open Mobile Output Logs" onclick="sendMsg('openLogs')">
+        📋 Logs
+      </button>
+      <button class="icon-btn" title="SDK & Toolchain Manager" onclick="sendMsg('openSdkManager')">⚙️</button>
     </div>
   </div>
   `;
 }
-function renderStandbyScreen(status, errorMessage) {
-    if (status === "starting") {
-        return `
-    <div class="standby-lockscreen">
-      <div></div>
-      <div class="lock-card">
-        <h3>🚀 Démarrage du serveur...</h3>
-        <p>Attribution du port dynamique et compilation de l'interface mobile.</p>
-        <div style="font-size: 20px; animation: spin 1s linear infinite;">⏳</div>
-      </div>
-      <div></div>
-    </div>`;
-    }
-    if (status === "error") {
-        return `
-    <div class="standby-lockscreen">
-      <div></div>
-      <div class="lock-card" style="border-color: rgba(239, 68, 68, 0.4);">
-        <h3 style="color: #ef4444;">Erreur d'exécution</h3>
-        <p>${errorMessage || "Échec du démarrage de l'environnement."}</p>
-        <button class="btn-launch-preview" onclick="sendMsg('runProject')">Réessayer</button>
-      </div>
-      <div></div>
-    </div>`;
-    }
+function renderFloatingZoom() {
     return `
-  <div class="standby-lockscreen">
-    <div>
-      <div class="lock-time" id="lock-time">09:41</div>
-      <div class="lock-date" id="lock-date">Vendredi 6 Novembre</div>
+  <div class="floating-zoom-pill">
+    <button class="zoom-btn" title="Zoom In" onclick="adjustZoom(0.1)">🔍+</button>
+    <button class="zoom-btn" title="Fit to View" onclick="resetZoomFit()">Fit</button>
+    <button class="zoom-btn" title="Zoom Out" onclick="adjustZoom(-0.1)">🔍−</button>
+  </div>
+  `;
+}
+function renderBottomBar(options) {
+    return `
+  <div class="bottom-bar">
+    <div class="bottom-left">
+      <button class="icon-btn" title="Rotate device" onclick="sendMsg('toggleOrientation')">🔄</button>
+      <button class="icon-btn" title="Screenshot capture" onclick="sendMsg('screenshot')">📸</button>
     </div>
 
-    <div class="lock-card">
-      <h3>Elmas Core Mobile</h3>
-      <p>Prêt pour le rendu temps réel React, Flutter, Kotlin ou HTML/JS.</p>
-      <button class="btn-launch-preview" onclick="sendMsg('runProject')">▶ Lancer la Preview</button>
+    <div class="bottom-center">
+      <select class="device-picker-pill" onchange="sendMsg('setProfile', this.value)">
+        ${device_profiles_1.STANDARD_PROFILES.filter((p, i, a) => a.findIndex((t) => t.name === p.name) === i)
+        .map((p) => `<option value="${p.id}" ${options.profile.name === p.name ? "selected" : ""}>
+                📱 ${p.name}
+              </option>`)
+        .join("")}
+      </select>
     </div>
 
-    <div class="lock-quick-actions">
-      <div class="quick-circle" title="Lampe torche">🔦</div>
-      <div class="quick-circle" title="Appareil photo">📷</div>
+    <div class="bottom-right">
+      <span class="bottom-link">
+        ${options.mode === "fast" ? "⚡ Fast Mode" : "🤖 Native Mode"}
+      </span>
+      <span style="color: #3f3f46;">•</span>
+      <span class="bottom-link">Elmas Studio</span>
     </div>
   </div>
   `;
 }
-function renderStatusBar() {
+function renderPhoneBezel(options) {
+    const isRunning = options.status === "running" && options.previewUrl;
     return `
-  <div class="status-bar">
-    <span id="clock">09:41</span>
-    <div class="status-icons">
-      <div class="signal-bars">
-        <div class="sig-bar" style="height: 3px;"></div>
-        <div class="sig-bar" style="height: 5px;"></div>
-        <div class="sig-bar" style="height: 8px;"></div>
-        <div class="sig-bar" style="height: 11px;"></div>
-      </div>
-      <span>5G</span>
-      <div class="battery-pill">
-        <div class="battery-shell">
-          <div class="battery-fill"></div>
-          <div class="battery-terminal"></div>
+  <div class="device-chassis" id="chassis">
+    <div class="speaker-earpiece"></div>
+    <div class="dynamic-island"></div>
+
+    <div class="status-bar">
+      <span id="clock">15:48</span>
+      <div class="status-icons">
+        <div class="cellular-dots">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot" style="opacity: 0.4;"></div>
+        </div>
+        <span>5G</span>
+        <div class="battery-icon">
+          <div class="battery-charge"></div>
         </div>
       </div>
     </div>
+
+    <div class="screen-surface" id="screen">
+      ${isRunning
+        ? `<iframe id="preview-frame" src="${options.previewUrl}" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>`
+        : `<div class="phone-standby">
+              <div class="standby-msg">
+                ${options.status === "starting"
+            ? "Démarrage de l'application..."
+            : options.status === "error"
+                ? options.errorMessage || "Erreur de lancement"
+                : "This app is ready to run via Elmas Studio"}
+              </div>
+            </div>`}
+    </div>
+
+    <div class="home-indicator"></div>
   </div>
   `;
 }

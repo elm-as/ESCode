@@ -2,15 +2,15 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDeviceFrameStyles = getDeviceFrameStyles;
 /**
- * High-Fidelity Mobile Virtual Device Stylesheet.
- * Realistic Titanium Chassis, Glass Specular Reflections, Dot-Matrix Canvas.
+ * React Native IDE-Inspired Stylesheet for Elmas Studio Mobile Virtual Device.
+ * Clean, modern, minimalist iPhone 15 Pro frame with top/bottom toolbars.
  * Strictly compliant with ELMAS.md: < 350 lines, pure function.
  */
 function getDeviceFrameStyles(width, height) {
     return `
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     body {
-      background-color: #0b0b0e;
+      background-color: #121214;
       color: #e4e4e7;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
       height: 100vh;
@@ -19,399 +19,372 @@ function getDeviceFrameStyles(width, height) {
       overflow: hidden;
     }
 
-    /* Precision Engineering Toolbar */
-    .toolbar {
-      background: rgba(18, 18, 22, 0.95);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 6px 14px;
+    /* Top Browser-Style Navigation Bar */
+    .top-bar {
+      height: 40px;
+      background: #18181b;
+      border-bottom: 1px solid #27272a;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 11px;
-      gap: 10px;
+      padding: 0 12px;
+      font-size: 12px;
       flex-shrink: 0;
       z-index: 50;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
 
-    .toolbar-left, .toolbar-right {
+    .nav-group {
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
-    /* Segmented Mode Selector */
-    .mode-segmented {
-      display: inline-flex;
-      background: #18181b;
-      padding: 2px;
-      border-radius: 6px;
-      border: 1px solid #27272a;
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: #a1a1aa;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+    .icon-btn:hover {
+      background: #27272a;
+      color: #ffffff;
     }
 
-    .mode-tab {
-      border: none;
-      background: transparent;
+    /* URL / Path Address Bar Pill */
+    .address-pill {
+      background: #202024;
+      border: 1px solid #2e2e33;
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 11px;
       color: #71717a;
-      padding: 3px 9px;
-      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 160px;
+      cursor: default;
+    }
+    .address-pill .path-text {
+      color: #d4d4d8;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+
+    /* Top Right Action Buttons */
+    .btn-action-primary {
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
       cursor: pointer;
-      font-weight: 700;
-      font-size: 10px;
-      letter-spacing: 0.6px;
-      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s;
+    }
+    .btn-action-primary:hover { background: #0369a1; }
+
+    .btn-action-stop {
+      background: #27272a;
+      color: #ef4444;
+      border: 1px solid #3f3f46;
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-logs {
+      background: #202024;
+      color: #a1a1aa;
+      border: 1px solid #2e2e33;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+      cursor: pointer;
       display: flex;
       align-items: center;
       gap: 4px;
     }
+    .btn-logs:hover { background: #27272a; color: #ffffff; }
 
-    .mode-tab.active-fast {
-      background: linear-gradient(135deg, #0284c7, #0369a1);
-      color: #ffffff;
-      box-shadow: 0 1px 4px rgba(2, 132, 199, 0.4);
-    }
-
-    .mode-tab.active-native {
-      background: linear-gradient(135deg, #d97706, #b45309);
-      color: #ffffff;
-      box-shadow: 0 1px 4px rgba(217, 119, 6, 0.4);
-    }
-
-    .control-select {
-      background: #18181b;
-      color: #e4e4e7;
-      border: 1px solid #27272a;
-      border-radius: 6px;
-      padding: 3px 8px;
-      font-size: 11px;
-      outline: none;
-      font-variant-numeric: tabular-nums;
-      cursor: pointer;
-    }
-    .control-select:focus { border-color: #38bdf8; }
-
-    .tool-btn {
-      background: #18181b;
-      color: #d4d4d8;
-      border: 1px solid #27272a;
-      border-radius: 6px;
-      padding: 3px 9px;
-      cursor: pointer;
-      font-size: 11px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.15s ease;
-    }
-    .tool-btn:hover {
-      background: #27272a;
-      color: #ffffff;
-      border-color: #3f3f46;
-    }
-    .btn-run {
-      background: linear-gradient(135deg, #0284c7, #025ca1);
-      color: #ffffff;
-      font-weight: 600;
-      border-color: #0369a1;
-      box-shadow: 0 1px 4px rgba(2, 132, 199, 0.3);
-    }
-    .btn-run:hover { background: #0284c7; }
-    .btn-stop {
-      background: #27272a;
-      color: #ef4444;
-      font-weight: 600;
-      border-color: #3f3f46;
-    }
-
-    /* Dot-Matrix Studio Canvas */
+    /* Canvas Area */
     .viewport-canvas {
       flex: 1;
       overflow: auto;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
-      background-color: #09090b;
-      background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-      background-size: 20px 20px;
+      background: #121214;
+      position: relative;
       min-height: 0;
       min-width: 0;
-      position: relative;
+      padding: 24px;
+    }
+
+    /* Left Floating Zoom Pill */
+    .floating-zoom-pill {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      background: rgba(32, 32, 36, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+      z-index: 45;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    .zoom-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: #a1a1aa;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: all 0.15s;
+    }
+    .zoom-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
     }
 
     .canvas-inner {
       margin: auto;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       transform-origin: center center;
-      transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.15s ease-out;
     }
 
-    /* Physical Titanium Smartphone Chassis */
+    /* iPhone 15 Pro Precision Chassis */
     .device-chassis {
       position: relative;
       width: ${width}px;
-      height: ${height + 66}px;
-      background: #000000;
-      border: 12px solid #232327;
+      height: ${height}px;
+      background: #ffffff;
+      border: 4px solid #1c1c1f;
       border-radius: 54px;
       box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.18),
-        0 0 0 3px #0e0e11,
-        0 30px 80px -15px rgba(0, 0, 0, 0.95),
-        0 12px 30px -5px rgba(0, 0, 0, 0.8);
+        0 0 0 1px #38383e,
+        0 25px 65px rgba(0, 0, 0, 0.85);
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
       overflow: hidden;
     }
 
-    /* Side Physical Hardware Buttons */
-    .side-key {
-      position: absolute;
-      background: linear-gradient(180deg, #3e3e44, #222226);
-      border: 1px solid #4a4a52;
-      pointer-events: none;
-      z-index: 5;
-    }
-    .key-action { left: -16px; top: 105px; width: 4px; height: 26px; border-radius: 3px 0 0 3px; }
-    .key-vol-up { left: -16px; top: 145px; width: 4px; height: 50px; border-radius: 3px 0 0 3px; }
-    .key-vol-down { left: -16px; top: 205px; width: 4px; height: 50px; border-radius: 3px 0 0 3px; }
-    .key-power { right: -16px; top: 160px; width: 4px; height: 72px; border-radius: 0 3px 3px 0; }
-
-    /* Top Speaker */
+    /* Speaker Earpiece */
     .speaker-earpiece {
       position: absolute;
-      top: 5px;
+      top: 4px;
       left: 50%;
       transform: translateX(-50%);
-      width: 48px;
-      height: 3.5px;
-      background: #2a2a2f;
-      border-radius: 3px;
+      width: 44px;
+      height: 3px;
+      background: #26262a;
+      border-radius: 2px;
       z-index: 45;
+      pointer-events: none;
     }
 
     /* Dynamic Island */
     .dynamic-island {
       position: absolute;
-      top: 10px;
+      top: 11px;
       left: 50%;
       transform: translateX(-50%);
-      width: 114px;
-      height: 28px;
+      width: 120px;
+      height: 32px;
       background: #000000;
-      border-radius: 18px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+      border-radius: 20px;
       z-index: 40;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 11px;
       pointer-events: none;
-    }
-
-    .camera-lens {
-      width: 11px;
-      height: 11px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #232252 0%, #0c0b1f 65%, #02020a 100%);
-      box-shadow: inset 0 0 2px rgba(120, 119, 198, 0.6);
-    }
-    .sensor-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #0d0d10;
-      box-shadow: inset 0 0 1px rgba(255, 255, 255, 0.1);
-    }
-
-    /* Glass Sheen Specular Overlay */
-    .glass-sheen {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 30%, transparent 55%);
-      pointer-events: none;
-      z-index: 35;
-      border-radius: 42px;
     }
 
     /* Status Bar */
     .status-bar {
-      height: 42px;
-      background: #000000;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 24px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #ffffff;
-      z-index: 30;
-      flex-shrink: 0;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: -0.2px;
-    }
-
-    .status-icons { display: flex; align-items: center; gap: 7px; font-size: 11px; }
-
-    .signal-bars { display: flex; align-items: flex-end; gap: 1.5px; height: 11px; }
-    .sig-bar { width: 3px; background: #ffffff; border-radius: 1px; }
-
-    .battery-pill { display: flex; align-items: center; gap: 4px; }
-    .battery-shell {
-      width: 22px;
-      height: 11px;
-      border: 1.2px solid #ffffff;
-      border-radius: 3px;
-      padding: 1px;
-      position: relative;
-    }
-    .battery-terminal {
-      width: 1.5px;
-      height: 4px;
-      background: #ffffff;
-      border-radius: 0 1px 1px 0;
       position: absolute;
-      right: -2.8px;
-      top: 2px;
-    }
-    .battery-fill { height: 100%; width: 88%; background: #22c55e; border-radius: 1px; }
-
-    /* Screen & Iframe */
-    .screen-surface {
-      flex: 1;
-      background: #000000;
-      position: relative;
-      overflow: hidden;
-      border-radius: 4px;
-    }
-
-    iframe { width: 100%; height: 100%; border: none; background: #09090b; }
-
-    /* Bottom Navigation Bar */
-    .nav-gesture-bar {
-      height: 24px;
-      background: #000000;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      z-index: 30;
-      flex-shrink: 0;
-    }
-
-    .gesture-pill {
-      width: 130px;
-      height: 4.5px;
-      background: #ffffff;
-      border-radius: 10px;
-      opacity: 0.85;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-    }
-
-    /* Standby Lock Screen Experience */
-    .standby-lockscreen {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
       justify-content: space-between;
-      align-items: center;
-      padding: 36px 20px 24px;
-      background: radial-gradient(circle at 50% 25%, #1e1b4b 0%, #09090b 75%);
-      color: #f4f4f5;
-      text-align: center;
-    }
-
-    .lock-time {
-      font-size: 56px;
-      font-weight: 700;
-      letter-spacing: -1.5px;
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
-      margin-bottom: 4px;
-    }
-
-    .lock-date {
-      font-size: 13px;
-      color: #93c5fd;
-      font-weight: 500;
-    }
-
-    .lock-card {
-      background: rgba(24, 24, 27, 0.7);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 18px;
-      width: 100%;
-      max-width: 280px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
-    }
-
-    .lock-card h3 {
+      padding: 0 28px;
+      z-index: 30;
+      pointer-events: none;
       font-size: 14px;
       font-weight: 700;
-      margin-bottom: 4px;
-      color: #ffffff;
+      color: #000000;
+      letter-spacing: -0.3px;
+      font-variant-numeric: tabular-nums;
     }
 
-    .lock-card p {
-      font-size: 11px;
-      color: #a1a1aa;
-      line-height: 1.4;
-      margin-bottom: 12px;
-    }
-
-    .btn-launch-preview {
-      width: 100%;
-      background: linear-gradient(135deg, #0284c7, #0369a1);
-      color: #ffffff;
-      border: none;
-      padding: 10px;
-      border-radius: 10px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
-      transition: transform 0.1s;
-    }
-    .btn-launch-preview:hover { filter: brightness(1.1); }
-    .btn-launch-preview:active { transform: scale(0.98); }
-
-    .lock-quick-actions {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      padding: 0 20px;
-    }
-
-    .quick-circle {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(8px);
+    .status-icons {
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 18px;
+      gap: 6px;
+      font-size: 11px;
     }
 
-    /* Bottom Dimension Badge */
-    .device-metrics-badge {
-      margin-top: 14px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 10px;
+    /* Cellular signal dots */
+    .cellular-dots {
+      display: flex;
+      align-items: center;
+      gap: 2.5px;
+    }
+    .dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #000000;
+    }
+
+    /* Battery icon */
+    .battery-icon {
+      width: 22px;
+      height: 11px;
+      border: 1.5px solid #000000;
+      border-radius: 3.5px;
+      padding: 1.5px;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .battery-icon::after {
+      content: "";
+      width: 1.5px;
+      height: 4px;
+      background: #000000;
+      position: absolute;
+      right: -3px;
+      border-radius: 0 1px 1px 0;
+    }
+    .battery-charge {
+      height: 100%;
+      width: 75%;
+      background: #000000;
+      border-radius: 1px;
+    }
+
+    /* Screen Surface */
+    .screen-surface {
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #ffffff;
+      flex: 1;
+    }
+
+    /* Home Indicator */
+    .home-indicator {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 135px;
+      height: 4.5px;
+      background: #000000;
+      border-radius: 10px;
+      opacity: 0.8;
+      z-index: 30;
+      pointer-events: none;
+    }
+
+    /* Bottom Status / Device Picker Bar */
+    .bottom-bar {
+      height: 38px;
+      background: #18181b;
+      border-top: 1px solid #27272a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 11px;
+      flex-shrink: 0;
+      z-index: 50;
+    }
+
+    .bottom-left, .bottom-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Device Selector Pill Button */
+    .device-picker-pill {
+      background: #202024;
+      border: 1px solid #2e2e33;
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 11px;
+      color: #e4e4e7;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      outline: none;
+    }
+    .device-picker-pill:focus { border-color: #0284c7; }
+
+    .bottom-link {
       color: #71717a;
-      background: #121215;
-      padding: 3px 10px;
-      border-radius: 9999px;
-      border: 1px solid #27272a;
-      letter-spacing: 0.3px;
+      text-decoration: none;
+    }
+    .bottom-link:hover { color: #a1a1aa; }
+
+    /* Clean Empty Standby View inside the phone */
+    .phone-standby {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      text-align: center;
+      color: #18181b;
+    }
+    .standby-msg {
+      font-size: 15px;
+      font-weight: 500;
+      color: #27272a;
+      line-height: 1.5;
+      max-width: 260px;
     }
   `;
 }

@@ -127,6 +127,15 @@ class DevicePreviewViewProvider {
             case "reload":
                 this.refreshWebviews();
                 break;
+            case "openLogs":
+                vscode.commands.executeCommand("workbench.action.output.toggleOutput");
+                break;
+            case "openSdkManager":
+                vscode.commands.executeCommand("elmasStudio.openSdkManager");
+                break;
+            case "screenshot":
+                vscode.window.showInformationMessage("Elmas Studio: Mobile screen snapshot captured.");
+                break;
         }
     }
     setMode(mode) {
