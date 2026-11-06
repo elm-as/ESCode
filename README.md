@@ -1,7 +1,7 @@
 # ELMAS STUDIO
 
 > **Professional, Lightweight, Multi-Framework Desktop IDE with Real-Time Mobile Preview**
-> *Built with Tauri 2, Rust, React 19, TypeScript, Vite, Tailwind CSS, Monaco Editor, and embedded SQLite.*
+> *Dual Distribution: Standalone VSCodium-based Core IDE & Tauri 2 Rust Shell.*
 
 ---
 
@@ -21,12 +21,55 @@
 
 ---
 
-## 2. Architecture & Domain Organization
+## 2. Launching Elmas Studio
+
+You have two powerful execution models:
+
+### Option A: Standalone Elmas Studio IDE (Recommended)
+Self-contained, portable desktop IDE with full Monaco editor, terminal, Git, and the **Elmas Studio Mobile Core** extension pre-bundled:
+
+```powershell
+# Launch Elmas Studio opening current workspace
+pnpm run start:studio
+
+# Or double-click the portable executable:
+.\Elmas-Studio-Desktop\Elmas Studio.exe
+```
+
+*Note: If setting up on a fresh machine without pre-downloaded binaries, run:*
+```powershell
+pnpm run setup:standalone
+```
+
+### Option B: Tauri 2 + Rust Desktop Shell
+Lightweight native Tauri 2 desktop shell with embedded SQLite persistence and docking layout:
+
+```powershell
+# Launch Tauri dev server
+pnpm tauri dev
+
+# Run Rust backend test suite (8 tests)
+cargo test --manifest-path src-tauri/Cargo.toml
+```
+
+---
+
+## 3. Architecture & Domain Organization
 
 The codebase follows the strict domain-driven architecture chartered in `ELMAS.md`:
 
 ```
 Scar/
+├── Elmas-Studio-Desktop/            # Standalone portable distribution (VSCodium core + Elmas extension)
+│   ├── Elmas Studio.exe            # Branded portable desktop executable
+│   └── data/extensions/elmas-studio-core/ # Pre-bundled mobile core extension
+├── src-extension/                   # Mobile Preview Extension source code (TypeScript)
+│   ├── domains/
+│   │   ├── adapters/               # Common framework adapters (React Web, RN, Flutter, Kotlin)
+│   │   ├── preview/                # Mobile Virtual Device webview & device frames
+│   │   ├── process/                # Port allocator & process tree killer
+│   │   └── sdk/                    # System SDK & Android SDK detector
+│   └── extension.ts                # Activation, status bar items & commands
 ├── src-tauri/                       # Rust Backend (Process, DB, Toolchain)
 │   ├── src/
 │   │   ├── database/               # Embedded SQLite with migrations & profile seeders
@@ -36,29 +79,25 @@ Scar/
 │   │   ├── commands/               # Tauri IPC command dispatchers & project detection
 │   │   └── lib.rs                  # Application builder & clean exit orchestrator
 │   └── Cargo.toml
-├── src/                             # Frontend Desktop Shell (React 19 + TypeScript)
-│   ├── domains/
-│   │   ├── editor/                 # Monaco Editor integration, tabs, breadcrumbs, settings
-│   │   ├── preview/                # Virtual device frame, bezel, status bar, touch reticle
-│   │   ├── projects/               # File explorer, project detection & workspace state
-│   │   ├── adapters/               # Common framework adapters (React Web, RN, Flutter, Kotlin)
-│   │   ├── sdk/                    # SDK Manager modal & toolchain status display
-│   │   ├── diagnostics/            # Unified error model with click-to-line code navigation
-│   │   └── terminal/               # Real-time process stdout/stderr stream viewer
+├── src/                             # Tauri Web Client (React 19, TypeScript, Dockview)
+│   ├── domains/                    # Editor, Preview, Projects, SDK, Diagnostics, Terminal
 │   ├── App.tsx                     # Unified 3-pane IDE layout & header
 │   └── index.css                   # High-density engineering design system
-└── test-projects/                   # Standalone sample projects for automated validation
-    └── react-web-mobile/           # Working mobile React demo project
+└── test-projects/                   # Standalone sample projects for all 4 frameworks
+    ├── react-web-mobile/           # React 19 + Vite mobile demo (boots in ~600ms)
+    ├── react-native-mobile/        # Expo / React Native project structure
+    ├── flutter-mobile/             # Flutter project structure (pubspec.yaml & lib/main.dart)
+    └── kotlin-compose-mobile/      # Compose Desktop structure (build.gradle.kts & Main.kt)
 ```
 
 ---
 
-## 3. Key Capabilities
+## 4. Key Capabilities
 
 - **Virtual Mobile Device Surface**:
-  - Profiles: Compact (360×800), iPhone SE (375×812), Flagship (390×844), Pixel 8 (412×915), Pro Max (432×960).
+  - Profiles: Compact (360×800), iPhone SE (375×812), Flagship (390×844), Pixel 8 (412×915), Pro Max (432×960), and custom dimensions.
   - Dynamic aspect ratio swapping for Portrait / Landscape.
-  - Realistic bezel, front camera pill, simulated status bar with real-time tabular clock, and navigation bar.
+  - Realistic bezel, front camera pill, simulated status bar with real-time tabular clock, and gesture bar.
   - Touch interaction overlay with visual touch reticle.
   - Zoom controls (75%, 85%, 100%) and instant screenshot trigger.
 - **Monaco Code Editor**:
@@ -74,28 +113,23 @@ Scar/
 
 ---
 
-## 4. Development & Verification
+## 5. Development & Verification
 
 ### Prerequisites
-- **Rust**: 1.80+ (MSVC toolchain on Windows)
 - **Node.js**: v20+ with `pnpm`
+- **Rust**: 1.80+ (MSVC toolchain on Windows)
 - *(Optional)* Flutter SDK, Android SDK & ADB for native preview execution.
 
-### Running Automated Tests
+### Automated Test Suite
 ```powershell
-# Run Rust backend unit and integration tests (DB, Port Allocator, Project Detection)
+# Run Rust backend unit and integration tests (8 tests passing)
 cargo test --manifest-path src-tauri/Cargo.toml
 
-# Run TypeScript typecheck and Vite frontend build
-pnpm build
+# Compile Elmas Studio Core Extension
+pnpm run build:extension
+
+# Build Tauri Web Frontend
+pnpm run build
 ```
 
-### Launching the Desktop Application in Development Mode
-```powershell
-pnpm tauri dev
-```
-
-### Building Release Package
-```powershell
-pnpm tauri build
 ```
