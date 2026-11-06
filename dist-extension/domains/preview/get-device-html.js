@@ -24,10 +24,10 @@ function generateDeviceHtml(options) {
 <body>
   ${topBarHtml}
 
-  <div class="viewport-canvas">
+  <div class="viewport-canvas" id="viewport-canvas">
     ${zoomHtml}
 
-    <div class="canvas-inner" id="canvas-inner">
+    <div class="canvas-sizer" id="canvas-sizer">
       ${phoneHtml}
     </div>
   </div>
@@ -50,29 +50,32 @@ function generateDeviceHtml(options) {
 
     let currentScale = 1.0;
     let isFitMode = true;
-    const canvas = document.querySelector(".viewport-canvas");
-    const inner = document.getElementById("canvas-inner");
+    const devW = ${width};
+    const devH = ${height};
+    const canvas = document.getElementById("viewport-canvas");
+    const sizer = document.getElementById("canvas-sizer");
+    const chassis = document.getElementById("chassis");
 
     function applyScale() {
-      if (!canvas || !inner) return;
+      if (!canvas || !sizer || !chassis) return;
       if (isFitMode) {
-        const padX = 48;
-        const padY = 48;
-        const availW = Math.max(canvas.clientWidth - padX, 200);
-        const availH = Math.max(canvas.clientHeight - padY, 200);
-        const devW = ${width} + 16;
-        const devH = ${height} + 16;
+        const padX = 64;
+        const padY = 24;
+        const availW = Math.max(canvas.clientWidth - padX, 160);
+        const availH = Math.max(canvas.clientHeight - padY, 160);
         const scale = Math.min(availW / devW, availH / devH, 1.0);
-        currentScale = scale;
-        inner.style.transform = "scale(" + Math.max(scale, 0.25).toFixed(3) + ")";
-      } else {
-        inner.style.transform = "scale(" + currentScale.toFixed(3) + ")";
+        currentScale = Math.max(scale, 0.25);
       }
+      const scaledW = Math.round(devW * currentScale);
+      const scaledH = Math.round(devH * currentScale);
+      sizer.style.width = scaledW + "px";
+      sizer.style.height = scaledH + "px";
+      chassis.style.transform = "scale(" + currentScale.toFixed(4) + ")";
     }
 
     function adjustZoom(delta) {
       isFitMode = false;
-      currentScale = Math.min(Math.max(currentScale + delta, 0.3), 2.0);
+      currentScale = Math.min(Math.max(currentScale + delta, 0.25), 1.5);
       applyScale();
     }
 
@@ -81,15 +84,12 @@ function generateDeviceHtml(options) {
       applyScale();
     }
 
-    window.addEventListener("resize", () => {
-      if (isFitMode) applyScale();
-    });
-    if (window.ResizeObserver) {
-      new ResizeObserver(() => {
-        if (isFitMode) applyScale();
-      }).observe(canvas);
+    window.addEventListener("resize", applyScale);
+    if (window.ResizeObserver && canvas) {
+      new ResizeObserver(applyScale).observe(canvas);
     }
-    setTimeout(applyScale, 25);
+    requestAnimationFrame(applyScale);
+    setTimeout(applyScale, 50);
 
     function updateLiveClock() {
       const d = new Date();

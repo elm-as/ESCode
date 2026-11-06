@@ -92,14 +92,14 @@ function formatHtmlForMobile(rawHtml) {
       margin: 0;
       padding: 0;
       min-height: 100vh;
-      background-color: #09090b;
-      color: #fafafa;
+      background-color: #ffffff;
+      color: #18181b;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
     body { padding: 24px 20px; line-height: 1.5; }
     h1, h2, h3, h4, h5, h6 {
-      color: #ffffff;
+      color: #09090b;
       font-weight: 700;
       letter-spacing: -0.5px;
       margin-top: 0;
@@ -109,7 +109,7 @@ function formatHtmlForMobile(rawHtml) {
     h2 { font-size: 20px; }
     h3 { font-size: 17px; }
     p {
-      color: #a1a1aa;
+      color: #52525b;
       font-size: 15px;
       margin-top: 0;
       margin-bottom: 16px;
@@ -126,16 +126,16 @@ function formatHtmlForMobile(rawHtml) {
     }
     button:active { opacity: 0.8; }
     input, textarea, select {
-      background: #18181b;
-      color: #ffffff;
-      border: 1px solid #27272a;
+      background: #f4f4f5;
+      color: #18181b;
+      border: 1px solid #d4d4d8;
       border-radius: 8px;
       padding: 9px 12px;
       font-size: 14px;
       outline: none;
       width: 100%;
     }
-    input:focus, textarea:focus, select:focus { border-color: #38bdf8; }
+    input:focus, textarea:focus, select:focus { border-color: #0284c7; }
   </style>
 </head>
 <body>

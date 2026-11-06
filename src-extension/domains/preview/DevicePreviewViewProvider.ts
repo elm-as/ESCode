@@ -16,7 +16,7 @@ export class DevicePreviewViewProvider implements vscode.WebviewViewProvider {
   private currentView?: vscode.WebviewView;
   private currentPanel?: vscode.WebviewPanel;
 
-  private selectedProfile: DeviceProfile = STANDARD_PROFILES[2]; // Flagship 390x844
+  private selectedProfile: DeviceProfile = STANDARD_PROFILES[0];
   private orientation: DeviceOrientation = "portrait";
   private mode: PreviewMode = "fast";
   private status: "idle" | "starting" | "running" | "error" = "idle";
@@ -35,9 +35,12 @@ export class DevicePreviewViewProvider implements vscode.WebviewViewProvider {
     this.updateWebview(webviewView.webview);
   }
 
-  async openAsPanel(extensionUri: vscode.Uri): Promise<void> {
+  async openAsPanel(_extensionUri: vscode.Uri): Promise<void> {
     if (this.currentPanel) {
       this.currentPanel.reveal(vscode.ViewColumn.Two);
+      if (this.status === "idle") {
+        await this.runCurrentProject();
+      }
       return;
     }
 
@@ -56,6 +59,10 @@ export class DevicePreviewViewProvider implements vscode.WebviewViewProvider {
 
     this.currentPanel.webview.onDidReceiveMessage((msg) => this.handleMessage(msg));
     this.updateWebview(this.currentPanel.webview);
+
+    if (this.status === "idle") {
+      await this.runCurrentProject();
+    }
   }
 
   private async ensureCodeEditorInLeftColumn(): Promise<void> {

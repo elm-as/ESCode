@@ -44,7 +44,7 @@ class DevicePreviewViewProvider {
     static viewType = "elmasStudio.devicePreview";
     currentView;
     currentPanel;
-    selectedProfile = device_profiles_1.STANDARD_PROFILES[2]; // Flagship 390x844
+    selectedProfile = device_profiles_1.STANDARD_PROFILES[0];
     orientation = "portrait";
     mode = "fast";
     status = "idle";
@@ -57,9 +57,12 @@ class DevicePreviewViewProvider {
         webviewView.webview.onDidReceiveMessage((msg) => this.handleMessage(msg));
         this.updateWebview(webviewView.webview);
     }
-    async openAsPanel(extensionUri) {
+    async openAsPanel(_extensionUri) {
         if (this.currentPanel) {
             this.currentPanel.reveal(vscode.ViewColumn.Two);
+            if (this.status === "idle") {
+                await this.runCurrentProject();
+            }
             return;
         }
         await this.ensureCodeEditorInLeftColumn();
@@ -69,6 +72,9 @@ class DevicePreviewViewProvider {
         });
         this.currentPanel.webview.onDidReceiveMessage((msg) => this.handleMessage(msg));
         this.updateWebview(this.currentPanel.webview);
+        if (this.status === "idle") {
+            await this.runCurrentProject();
+        }
     }
     async ensureCodeEditorInLeftColumn() {
         const openEditors = vscode.window.visibleTextEditors;
