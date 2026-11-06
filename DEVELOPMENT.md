@@ -99,3 +99,6 @@ Strictly following `ELMAS.md` specifications:
 - **ADR-006: Industry-Standard Docking Engine via `dockview-react`**:
   - *Context*: Static CSS flexbox panels feel amateurish, rigid, and don't provide the expected developer ergonomics of professional tools like VS Code / Eclipse Theia.
   - *Decision*: Integrated `dockview-react` (8.8.3) to provide authentic VS Code panel docking, tab reordering, horizontal/vertical splits, floating groups, and draggable layout persistence.
+- **ADR-007: VSCodium-Based Standalone Distribution (Option B)**:
+  - *Context*: Rather than writing an ad-hoc IDE UI from scratch, leverage VSCodium (the open-source, telemetry-free binary release of VS Code) as the desktop shell.
+  - *Decision*: Implemented `src-extension/` containing the Elmas Studio Core Extension (mobile virtual device, 4 framework adapters, process manager, SDK detector) and `scripts/setup-standalone-studio.ps1` to assemble a self-contained portable distribution (`Elmas-Studio-Desktop/Elmas Studio.exe`).
