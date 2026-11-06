@@ -200,6 +200,17 @@ pub fn detect_project_type(project_path: String) -> Result<ProjectDetectionResul
         }
     }
 
+    // 4. Vanilla Web check: index.html
+    let index_html = root.join("index.html");
+    if index_html.exists() {
+        return Ok(ProjectDetectionResult {
+            framework: "vanilla_web".to_string(),
+            entry_file: Some("index.html".to_string()),
+            package_name: None,
+            dev_script: None,
+        });
+    }
+
     Ok(ProjectDetectionResult {
         framework: "unknown".to_string(),
         entry_file: None,
@@ -250,6 +261,14 @@ mod tests {
         let manifest = detect_project_type("../test-projects/kotlin-compose-mobile".to_string())
             .expect("detect Kotlin project failed");
         assert_eq!(manifest.framework, "kotlin_compose");
+    }
+
+    #[test]
+    fn test_detect_vanilla_web_project() {
+        let manifest = detect_project_type("../test-projects/vanilla-html-mobile".to_string())
+            .expect("detect vanilla web project failed");
+        assert_eq!(manifest.framework, "vanilla_web");
+        assert_eq!(manifest.entry_file, Some("index.html".to_string()));
     }
 }
 

@@ -5,6 +5,7 @@ const react_web_adapter_1 = require("./react-web-adapter");
 const react_native_adapter_1 = require("./react-native-adapter");
 const flutter_adapter_1 = require("./flutter-adapter");
 const kotlin_adapter_1 = require("./kotlin-adapter");
+const vanilla_web_adapter_1 = require("./vanilla-web-adapter");
 const process_manager_1 = require("../process/process-manager");
 class ExtensionAdapterManager {
     adapters = new Map();
@@ -15,6 +16,7 @@ class ExtensionAdapterManager {
         this.registerAdapter(new react_native_adapter_1.ReactNativeAdapter());
         this.registerAdapter(new flutter_adapter_1.FlutterAdapter());
         this.registerAdapter(new kotlin_adapter_1.KotlinComposeAdapter());
+        this.registerAdapter(new vanilla_web_adapter_1.VanillaWebAdapter());
     }
     registerAdapter(adapter) {
         this.adapters.set(adapter.framework, adapter);
@@ -33,7 +35,7 @@ class ExtensionAdapterManager {
     async startProject(workspacePath, mode) {
         const framework = await this.detectWorkspaceFramework(workspacePath);
         if (framework === "unknown") {
-            throw new Error("No supported mobile framework detected in workspace.");
+            throw new Error("No supported mobile framework or HTML project detected in workspace.");
         }
         const adapter = this.getAdapter(framework);
         if (!adapter) {
@@ -62,6 +64,11 @@ class ExtensionAdapterManager {
             await this.currentRunningAdapter.stop();
             this.currentRunningAdapter = null;
             this.currentRunResult = null;
+        }
+    }
+    async reloadProject() {
+        if (this.currentRunningAdapter) {
+            await this.currentRunningAdapter.reload();
         }
     }
     getCurrentRunResult() {

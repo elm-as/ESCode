@@ -84,10 +84,15 @@ function activate(context) {
     if (folders && folders.length > 0) {
         adapter_manager_1.adapterManager.detectWorkspaceFramework(folders[0].uri.fsPath).then((fw) => {
             if (fw !== "unknown") {
-                vscode.window.showInformationMessage(`Elmas Studio: Detected ${fw.toUpperCase()} project. Ready for mobile preview.`);
+                const label = fw === "vanilla_web" ? "HTML / CSS / JS" : fw.toUpperCase();
+                vscode.window.showInformationMessage(`Elmas Studio: Detected ${label} project. Ready for mobile preview.`);
             }
         });
     }
+    // Auto-reload preview on file save
+    context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(async () => {
+        await adapter_manager_1.adapterManager.reloadProject();
+    }));
 }
 function updateStatusBar(isRunning) {
     if (isRunning) {

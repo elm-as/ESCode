@@ -64,12 +64,20 @@ export function activate(context: vscode.ExtensionContext): void {
   if (folders && folders.length > 0) {
     adapterManager.detectWorkspaceFramework(folders[0].uri.fsPath).then((fw) => {
       if (fw !== "unknown") {
+        const label = fw === "vanilla_web" ? "HTML / CSS / JS" : fw.toUpperCase();
         vscode.window.showInformationMessage(
-          `Elmas Studio: Detected ${fw.toUpperCase()} project. Ready for mobile preview.`
+          `Elmas Studio: Detected ${label} project. Ready for mobile preview.`
         );
       }
     });
   }
+
+  // Auto-reload preview on file save
+  context.subscriptions.push(
+    vscode.workspace.onDidSaveTextDocument(async () => {
+      await adapterManager.reloadProject();
+    })
+  );
 }
 
 function updateStatusBar(isRunning: boolean): void {

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Vanilla Mobile App — Elmas Studio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="mobile-app">
+    <header class="app-header">
+      <div class="badge">Vanilla Web</div>
+      <h1>Elmas Core</h1>
+      <p>HTML5 • CSS3 • JavaScript (ES6+)</p>
+    </header>
+
+    <main class="app-content">
+      <div class="card">
+        <h3>⚡ Zéro Dépendance</h3>
+        <p>Ce projet s'exécute directement sans bundler, sans Vite, sans npm. 100% standard web.</p>
+      </div>
+
+      <div class="card">
+        <h3>🔄 Live Reload Actif</h3>
+        <p>Modifiez ce fichier HTML ou le fichier CSS/JS et sauvegardez pour voir le rechargement instantané.</p>
+      </div>
+
+      <div class="counter-box">
+        <span class="counter-label">Compteur tactile</span>
+        <div class="counter-value" id="counter-val">0</div>
+        <div class="btn-row">
+          <button class="btn btn-sub" id="btn-dec">-1</button>
+          <button class="btn btn-add" id="btn-inc">+1</button>
+        </div>
+      </div>
+    </main>
+
+    <footer class="app-footer">
+      <span>Elmas Studio Mobile Engine</span>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

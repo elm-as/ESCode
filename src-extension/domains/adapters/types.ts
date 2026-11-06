@@ -1,4 +1,5 @@
 export type SupportedFramework =
+  | "vanilla_web"
   | "react_web"
   | "react_native"
   | "flutter"

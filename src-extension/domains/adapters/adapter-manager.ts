@@ -7,6 +7,7 @@ import { ReactWebAdapter } from "./react-web-adapter";
 import { ReactNativeAdapter } from "./react-native-adapter";
 import { FlutterAdapter } from "./flutter-adapter";
 import { KotlinComposeAdapter } from "./kotlin-adapter";
+import { VanillaWebAdapter } from "./vanilla-web-adapter";
 import { processManager } from "../process/process-manager";
 
 export class ExtensionAdapterManager {
@@ -19,6 +20,7 @@ export class ExtensionAdapterManager {
     this.registerAdapter(new ReactNativeAdapter());
     this.registerAdapter(new FlutterAdapter());
     this.registerAdapter(new KotlinComposeAdapter());
+    this.registerAdapter(new VanillaWebAdapter());
   }
 
   private registerAdapter(adapter: IFrameworkAdapter): void {
@@ -44,7 +46,7 @@ export class ExtensionAdapterManager {
   ): Promise<AdapterRunResult> {
     const framework = await this.detectWorkspaceFramework(workspacePath);
     if (framework === "unknown") {
-      throw new Error("No supported mobile framework detected in workspace.");
+      throw new Error("No supported mobile framework or HTML project detected in workspace.");
     }
 
     const adapter = this.getAdapter(framework);
@@ -82,6 +84,12 @@ export class ExtensionAdapterManager {
     }
   }
 
+  async reloadProject(): Promise<void> {
+    if (this.currentRunningAdapter) {
+      await this.currentRunningAdapter.reload();
+    }
+  }
+
   getCurrentRunResult(): AdapterRunResult | null {
     return this.currentRunResult;
   }
@@ -92,4 +100,3 @@ export class ExtensionAdapterManager {
 }
 
 export const adapterManager = new ExtensionAdapterManager();
-
