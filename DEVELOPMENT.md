@@ -96,3 +96,6 @@ Strictly following `ELMAS.md` specifications:
 - **ADR-005: Decomposed Device Preview Components**:
   - *Context*: `VirtualDeviceSurface.tsx` was approaching the 350-line limit mandated by `ELMAS.md`.
   - *Decision*: Extracted `DeviceToolbar.tsx` (141 lines) to keep `VirtualDeviceSurface.tsx` compact (235 lines), maintaining high readability and single responsibility.
+- **ADR-006: Industry-Standard Docking Engine via `dockview-react`**:
+  - *Context*: Static CSS flexbox panels feel amateurish, rigid, and don't provide the expected developer ergonomics of professional tools like VS Code / Eclipse Theia.
+  - *Decision*: Integrated `dockview-react` (8.8.3) to provide authentic VS Code panel docking, tab reordering, horizontal/vertical splits, floating groups, and draggable layout persistence.
