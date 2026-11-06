@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:extension": "tsc -p tsconfig.extension.json",
+    "setup:standalone": "powershell -ExecutionPolicy Bypass -File ./scripts/setup-standalone-studio.ps1",
+    "start:studio": "powershell -Command \"& './Elmas-Studio-Desktop/Elmas Studio.exe' .\"",
     "preview": "vite preview",
     "tauri": "tauri"
   },
@@ -29,6 +32,7 @@
     "@types/node": "^26.6.6",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@types/vscode": "^1.145.0",
     "@vitejs/plugin-react": "^6.0.2",
     "tailwindcss": "^4.3.4",
     "typescript": "~6.0.3",

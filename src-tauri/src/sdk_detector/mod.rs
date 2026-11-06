@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -11,6 +11,14 @@ pub struct ToolItem {
     pub required_for: Vec<String>,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct CustomSdkPaths {
+    pub android_sdk: Option<String>,
+    pub flutter_sdk: Option<String>,
+    pub java_home: Option<String>,
+    pub adb_path: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolchainStatus {
     pub tools: Vec<ToolItem>,
@@ -19,37 +27,39 @@ pub struct ToolchainStatus {
     pub java_home: Option<String>,
 }
 
-pub fn scan_toolchain() -> ToolchainStatus {
+pub fn scan_toolchain(custom: Option<CustomSdkPaths>) -> ToolchainStatus {
+    let custom = custom.unwrap_or_default();
     let mut tools = Vec::new();
 
-    // 1. Node.js
+    // 1. Node.js, npm, pnpm
     tools.push(detect_cli_tool("node", "Node.js", &["--version"], vec!["React Web", "React Native"]));
-
-    // 2. npm & pnpm
     tools.push(detect_cli_tool("npm", "npm", &["--version"], vec!["React Web", "React Native"]));
     tools.push(detect_cli_tool("pnpm", "pnpm", &["--version"], vec!["React Web", "React Native"]));
 
-    // 3. Flutter & Dart
-    let flutter_tool = detect_flutter_tool();
+    // 2. Flutter & Dart
+    let flutter_tool = detect_flutter_tool(custom.flutter_sdk.as_deref());
     let flutter_path = flutter_tool.path.clone();
     tools.push(flutter_tool);
     tools.push(detect_cli_tool("dart", "Dart", &["--version"], vec!["Flutter"]));
 
-    // 4. Java JDK
-    tools.push(detect_java_tool());
-
-    // 5. Gradle
+    // 3. Java JDK & Gradle
+    tools.push(detect_java_tool(custom.java_home.as_deref()));
     tools.push(detect_cli_tool("gradle", "Gradle", &["-v"], vec!["Kotlin / Android"]));
 
-    // 6. Android SDK & ADB
-    let (android_sdk_path, adb_tool) = detect_android_sdk_and_adb();
+    // 4. Android SDK & ADB
+    let (android_sdk_path, adb_tool) = detect_android_sdk_and_adb(
+        custom.android_sdk.as_deref(),
+        custom.adb_path.as_deref(),
+    );
     tools.push(adb_tool);
+
+    let final_java_home = custom.java_home.or_else(|| std::env::var("JAVA_HOME").ok());
 
     ToolchainStatus {
         tools,
         android_sdk_path,
         flutter_sdk_path: flutter_path,
-        java_home: std::env::var("JAVA_HOME").ok(),
+        java_home: final_java_home,
     }
 }
 
@@ -81,14 +91,35 @@ fn detect_cli_tool(binary: &str, display_name: &str, args: &[&str], required_for
     }
 }
 
-fn detect_flutter_tool() -> ToolItem {
-    let flutter_in_path = which::which("flutter");
-    let mut resolved_path = flutter_in_path.ok().map(|p| p.to_string_lossy().to_string());
+fn detect_flutter_tool(custom_path: Option<&str>) -> ToolItem {
+    let mut resolved_path = None;
 
-    // Check standard Windows Flutter directory if not in PATH
+    if let Some(cp) = custom_path {
+        let p = Path::new(cp);
+        if p.exists() {
+            let bin_candidate = p.join("bin").join("flutter.bat");
+            if bin_candidate.exists() {
+                resolved_path = Some(bin_candidate.to_string_lossy().to_string());
+            } else {
+                resolved_path = Some(p.to_string_lossy().to_string());
+            }
+        }
+    }
+
+    if resolved_path.is_none() {
+        if let Ok(p) = which::which("flutter") {
+            resolved_path = Some(p.to_string_lossy().to_string());
+        }
+    }
+
     if resolved_path.is_none() {
         if let Ok(userprofile) = std::env::var("USERPROFILE") {
-            let candidate = PathBuf::from(userprofile).join("Documents").join("Flutter SDK").join("flutter").join("bin").join("flutter.bat");
+            let candidate = PathBuf::from(userprofile)
+                .join("Documents")
+                .join("Flutter SDK")
+                .join("flutter")
+                .join("bin")
+                .join("flutter.bat");
             if candidate.exists() {
                 resolved_path = Some(candidate.to_string_lossy().to_string());
             }
@@ -115,26 +146,50 @@ fn detect_flutter_tool() -> ToolItem {
     }
 }
 
-fn detect_java_tool() -> ToolItem {
-    let which_res = which::which("java");
-    let path = which_res.ok().map(|p| p.to_string_lossy().to_string());
-    let version = run_command_for_version("java", &["-version"]);
+fn detect_java_tool(custom_home: Option<&str>) -> ToolItem {
+    let mut resolved_path = None;
+
+    if let Some(ch) = custom_home {
+        let p = Path::new(ch);
+        let java_exe = p.join("bin").join(if cfg!(windows) { "java.exe" } else { "java" });
+        if java_exe.exists() {
+            resolved_path = Some(java_exe.to_string_lossy().to_string());
+        }
+    }
+
+    if resolved_path.is_none() {
+        if let Ok(p) = which::which("java") {
+            resolved_path = Some(p.to_string_lossy().to_string());
+        }
+    }
+
+    let version = resolved_path.as_deref().and_then(|p| run_command_for_version(p, &["-version"]));
 
     ToolItem {
         name: "Java JDK".to_string(),
-        installed: path.is_some(),
+        installed: resolved_path.is_some(),
         version,
-        path,
+        path: resolved_path,
         required_for: vec!["Flutter (Android)".to_string(), "Kotlin / Compose".to_string()],
     }
 }
 
-fn detect_android_sdk_and_adb() -> (Option<String>, ToolItem) {
+fn detect_android_sdk_and_adb(
+    custom_sdk: Option<&str>,
+    custom_adb: Option<&str>,
+) -> (Option<String>, ToolItem) {
     let mut sdk_dir: Option<PathBuf> = None;
 
-    if let Ok(env_val) = std::env::var("ANDROID_HOME") {
-        let p = PathBuf::from(env_val);
+    if let Some(cs) = custom_sdk {
+        let p = PathBuf::from(cs);
         if p.exists() { sdk_dir = Some(p); }
+    }
+
+    if sdk_dir.is_none() {
+        if let Ok(env_val) = std::env::var("ANDROID_HOME") {
+            let p = PathBuf::from(env_val);
+            if p.exists() { sdk_dir = Some(p); }
+        }
     }
 
     if sdk_dir.is_none() {
@@ -153,26 +208,29 @@ fn detect_android_sdk_and_adb() -> (Option<String>, ToolItem) {
 
     let sdk_path_str = sdk_dir.as_ref().map(|p| p.to_string_lossy().to_string());
 
-    // Check ADB either in PATH or in Android SDK platform-tools
-    let adb_in_path = which::which("adb").ok().map(|p| p.to_string_lossy().to_string());
-    let adb_resolved = if adb_in_path.is_some() {
-        adb_in_path
-    } else if let Some(ref sdk) = sdk_dir {
-        let adb_candidate = sdk.join("platform-tools").join("adb.exe");
-        if adb_candidate.exists() {
-            Some(adb_candidate.to_string_lossy().to_string())
-        } else {
-            None
+    // Check ADB: custom_adb -> PATH -> platform-tools in sdk_dir
+    let mut adb_resolved = None;
+    if let Some(ca) = custom_adb {
+        let p = PathBuf::from(ca);
+        if p.exists() {
+            adb_resolved = Some(p.to_string_lossy().to_string());
         }
-    } else {
-        None
-    };
+    }
 
-    let adb_version = if let Some(ref adb_p) = adb_resolved {
-        run_command_for_version(adb_p, &["version"])
-    } else {
-        None
-    };
+    if adb_resolved.is_none() {
+        adb_resolved = which::which("adb").ok().map(|p| p.to_string_lossy().to_string());
+    }
+
+    if adb_resolved.is_none() {
+        if let Some(ref sdk) = sdk_dir {
+            let adb_candidate = sdk.join("platform-tools").join(if cfg!(windows) { "adb.exe" } else { "adb" });
+            if adb_candidate.exists() {
+                adb_resolved = Some(adb_candidate.to_string_lossy().to_string());
+            }
+        }
+    }
+
+    let adb_version = adb_resolved.as_deref().and_then(|p| run_command_for_version(p, &["version"]));
 
     let adb_tool = ToolItem {
         name: "Android ADB".to_string(),

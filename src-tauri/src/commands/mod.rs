@@ -93,8 +93,19 @@ pub fn db_get_device_profiles(state: State<'_, AppState>) -> Result<Vec<DevicePr
 }
 
 #[tauri::command]
-pub fn sdk_scan() -> ToolchainStatus {
-    sdk_detector::scan_toolchain()
+pub fn sdk_scan(state: State<'_, AppState>) -> ToolchainStatus {
+    let custom = sdk_detector::CustomSdkPaths {
+        android_sdk: state.db.get_setting("custom_android_sdk").ok().flatten(),
+        flutter_sdk: state.db.get_setting("custom_flutter_sdk").ok().flatten(),
+        java_home: state.db.get_setting("custom_java_home").ok().flatten(),
+        adb_path: state.db.get_setting("custom_adb_path").ok().flatten(),
+    };
+    sdk_detector::scan_toolchain(Some(custom))
+}
+
+#[tauri::command]
+pub fn sdk_save_custom_path(key: String, path: String, state: State<'_, AppState>) -> Result<(), String> {
+    state.db.set_setting(&key, &path)
 }
 
 #[tauri::command]
@@ -216,6 +227,29 @@ mod tests {
             .expect("detect project failed");
         assert_eq!(manifest.framework, "react_web");
         assert_eq!(manifest.entry_file, Some("src/App.tsx".to_string()));
+    }
+
+    #[test]
+    fn test_detect_react_native_project() {
+        let manifest = detect_project_type("../test-projects/react-native-mobile".to_string())
+            .expect("detect RN project failed");
+        assert_eq!(manifest.framework, "react_native");
+        assert_eq!(manifest.entry_file, Some("App.tsx".to_string()));
+    }
+
+    #[test]
+    fn test_detect_flutter_project() {
+        let manifest = detect_project_type("../test-projects/flutter-mobile".to_string())
+            .expect("detect Flutter project failed");
+        assert_eq!(manifest.framework, "flutter");
+        assert_eq!(manifest.entry_file, Some("lib/main.dart".to_string()));
+    }
+
+    #[test]
+    fn test_detect_kotlin_compose_project() {
+        let manifest = detect_project_type("../test-projects/kotlin-compose-mobile".to_string())
+            .expect("detect Kotlin project failed");
+        assert_eq!(manifest.framework, "kotlin_compose");
     }
 }
 

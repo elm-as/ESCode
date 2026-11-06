@@ -54,6 +54,7 @@ pub fn run() {
             commands::db_get_recent_projects,
             commands::db_get_device_profiles,
             commands::sdk_scan,
+            commands::sdk_save_custom_path,
             commands::process_allocate_port,
             commands::process_start,
             commands::process_stop,

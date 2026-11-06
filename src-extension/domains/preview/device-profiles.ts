@@ -1,0 +1,31 @@
+export type DeviceOrientation = "portrait" | "landscape";
+
+export type PreviewMode = "fast" | "native";
+
+export interface DeviceProfile {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  dpi: number;
+  isDefault: boolean;
+}
+
+export const STANDARD_PROFILES: DeviceProfile[] = [
+  { id: "compact-360", name: "Compact Phone (360×800)", width: 360, height: 800, dpi: 2.0, isDefault: false },
+  { id: "standard-375", name: "iPhone SE / Standard (375×812)", width: 375, height: 812, dpi: 3.0, isDefault: false },
+  { id: "flagship-390", name: "Flagship Modern (390×844)", width: 390, height: 844, dpi: 3.0, isDefault: true },
+  { id: "pixel-412", name: "Pixel 8 / Large (412×915)", width: 412, height: 915, dpi: 2.625, isDefault: false },
+  { id: "pro-max-432", name: "Pro Max / Ultra (432×960)", width: 432, height: 960, dpi: 3.0, isDefault: false },
+];
+
+export function calculateDeviceDimensions(
+  profile: DeviceProfile,
+  orientation: DeviceOrientation
+): { width: number; height: number } {
+  if (orientation === "landscape") {
+    return { width: profile.height, height: profile.width };
+  }
+  return { width: profile.width, height: profile.height };
+}
+
