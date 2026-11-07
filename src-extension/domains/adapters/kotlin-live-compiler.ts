@@ -172,3 +172,4 @@ export function renderKotlinComposeDocument(model: ParsedComposeModel): string {
 </body>
 </html>`;
 }
+

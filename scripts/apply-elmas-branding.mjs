@@ -79,7 +79,40 @@ if (fs.existsSync(path.dirname(bundledIcon))) {
   fs.writeFileSync(bundledIcon, activityBarSvg);
 }
 
-// 2. Configure French Locale & Language Pack
+// 2. Inject macOS Sequoia / Xcode Dark Glass CSS into workbench.desktop.main.css & update checksum
+const workbenchCssPath = path.join(desktopDir, "resources/app/out/vs/workbench/workbench.desktop.main.css");
+const macosCssPath = path.resolve("scripts/elmas-macos-theme.css");
+if (fs.existsSync(workbenchCssPath) && fs.existsSync(macosCssPath)) {
+  const startMarker = "/* === ELMAS MACOS SEQUOIA / XCODE DARK GLASS UI === */";
+  const endMarker = "/* === END ELMAS MACOS SEQUOIA UI === */";
+  let cssContent = fs.readFileSync(workbenchCssPath, "utf8");
+  const customCss = fs.readFileSync(macosCssPath, "utf8");
+
+  const startIdx = cssContent.indexOf(startMarker);
+  const endIdx = cssContent.indexOf(endMarker);
+  if (startIdx !== -1 && endIdx !== -1) {
+    cssContent = cssContent.slice(0, startIdx).trimEnd();
+  }
+
+  cssContent = `${cssContent}\n\n${customCss}\n`;
+  fs.writeFileSync(workbenchCssPath, cssContent, "utf8");
+
+  const productJsonPath = path.join(desktopDir, "resources/app/product.json");
+  if (fs.existsSync(productJsonPath)) {
+    const product = JSON.parse(fs.readFileSync(productJsonPath, "utf8"));
+    const newHash = crypto
+      .createHash("sha256")
+      .update(fs.readFileSync(workbenchCssPath))
+      .digest("base64")
+      .replace(/=+$/, "");
+    if (product.checksums) {
+      product.checksums["vs/workbench/workbench.desktop.main.css"] = newHash;
+      fs.writeFileSync(productJsonPath, JSON.stringify(product, null, 2), "utf8");
+    }
+  }
+}
+
+// 3. Configure French Locale & Language Pack
 const argvPath = path.join(desktopDir, "data/argv.json");
 fs.mkdirSync(path.dirname(argvPath), { recursive: true });
 fs.writeFileSync(
@@ -133,7 +166,7 @@ if (fs.existsSync(extRoot)) {
   }
 }
 
-// 3. Apply Elmas Amber Forge Theme & Layout in settings.json
+// 4. Apply Elmas Amber Forge + macOS Sequoia Typography & Smooth Motion in settings.json
 const settings = {
   "workbench.colorTheme": "Default Dark Modern",
   "workbench.startupEditor": "none",
@@ -141,58 +174,87 @@ const settings = {
   "workbench.editor.openSideBySideDirection": "right",
   "files.autoSave": "afterDelay",
   "files.autoSaveDelay": 100,
+  "editor.fontFamily": "'JetBrains Mono', 'Cascadia Code', 'SF Mono', 'Fira Code', Consolas, monospace",
+  "editor.fontLigatures": true,
+  "editor.fontSize": 13.5,
+  "editor.lineHeight": 22,
+  "editor.letterSpacing": 0.2,
+  "editor.padding": { "top": 16, "bottom": 16 },
+  "editor.cursorBlinking": "smooth",
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.cursorWidth": 2,
+  "editor.smoothScrolling": true,
+  "workbench.list.smoothScrolling": true,
+  "terminal.integrated.smoothScrolling": true,
+  "editor.minimap.enabled": false,
+  "editor.renderLineHighlight": "all",
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.guides.indentation": true,
+  "editor.scrollbar.verticalScrollbarSize": 6,
+  "editor.scrollbar.horizontalScrollbarSize": 6,
+  "workbench.tree.indent": 16,
+  "workbench.tree.renderIndentGuides": "onHover",
+  "window.commandCenter": true,
   "elmasStudio.sdkPaths.androidSdk": "C:\\Users\\elmas\\AppData\\Local\\Android\\Sdk",
   "workbench.colorCustomizations": {
-    "titleBar.activeBackground": "#0d0d0f",
-    "titleBar.inactiveBackground": "#0d0d0f",
+    "titleBar.activeBackground": "#0b0b0e",
+    "titleBar.inactiveBackground": "#0b0b0e",
     "titleBar.activeForeground": "#e4e4e7",
-    "titleBar.border": "#1f1f23",
-    "activityBar.background": "#0d0d0f",
+    "titleBar.border": "#19191f",
+    "activityBar.background": "#0b0b0e",
     "activityBar.foreground": "#f59e0b",
-    "activityBar.inactiveForeground": "#71717a",
-    "activityBar.activeBorder": "#f59e0b",
-    "activityBar.border": "#1f1f23",
+    "activityBar.inactiveForeground": "#63636e",
+    "activityBar.activeBorder": "#00000000",
+    "activityBar.border": "#19191f",
     "activityBarBadge.background": "#d97706",
     "activityBarBadge.foreground": "#09090b",
-    "sideBar.background": "#101013",
+    "sideBar.background": "#0e0e12",
     "sideBar.foreground": "#d4d4d8",
-    "sideBar.border": "#1f1f23",
-    "sideBarSectionHeader.background": "#141418",
-    "sideBarSectionHeader.foreground": "#f59e0b",
-    "editor.background": "#121215",
-    "editorGroupHeader.tabsBackground": "#0e0e11",
-    "editorGroupHeader.tabsBorder": "#1f1f23",
-    "tab.activeBackground": "#121215",
+    "sideBar.border": "#19191f",
+    "sideBarSectionHeader.background": "#0e0e12",
+    "sideBarSectionHeader.foreground": "#a1a1aa",
+    "sideBarSectionHeader.border": "#19191f",
+    "editor.background": "#111115",
+    "editorGroupHeader.tabsBackground": "#0b0b0e",
+    "editorGroupHeader.tabsBorder": "#19191f",
+    "tab.activeBackground": "#1a1a20",
     "tab.activeForeground": "#fafafa",
-    "tab.activeBorderTop": "#f59e0b",
-    "tab.inactiveBackground": "#0e0e11",
+    "tab.activeBorderTop": "#00000000",
+    "tab.inactiveBackground": "#0b0b0e",
     "tab.inactiveForeground": "#71717a",
-    "tab.border": "#1f1f23",
-    "statusBar.background": "#0d0d0f",
-    "statusBar.noFolderBackground": "#0d0d0f",
+    "tab.border": "#00000000",
+    "statusBar.background": "#0b0b0e",
+    "statusBar.noFolderBackground": "#0b0b0e",
     "statusBar.debuggingBackground": "#b45309",
-    "statusBar.foreground": "#a1a1aa",
-    "statusBar.border": "#1f1f23",
+    "statusBar.foreground": "#8e8e99",
+    "statusBar.border": "#19191f",
     "button.background": "#d97706",
     "button.hoverBackground": "#f59e0b",
     "button.foreground": "#09090b",
-    "focusBorder": "#d97706",
-    "input.background": "#18181c",
-    "input.border": "#27272c",
-    "list.activeSelectionBackground": "#271f14",
+    "focusBorder": "#d9770688",
+    "input.background": "#16161b",
+    "input.border": "#26262e",
+    "list.activeSelectionBackground": "#231d15",
     "list.activeSelectionForeground": "#fbbf24",
-    "list.inactiveSelectionBackground": "#1c1915",
-    "list.hoverBackground": "#18181c",
+    "list.inactiveSelectionBackground": "#191714",
+    "list.hoverBackground": "#17171d",
     "editorCursor.foreground": "#f59e0b",
     "editor.selectionBackground": "#d9770633",
-    "editor.lineHighlightBackground": "#18181c",
-    "panel.background": "#101013",
-    "panel.border": "#1f1f23",
+    "editor.lineHighlightBackground": "#17171d",
+    "editor.lineHighlightBorder": "#00000000",
+    "panel.background": "#0e0e12",
+    "panel.border": "#19191f",
     "panelTitle.activeBorder": "#f59e0b",
-    "panelTitle.activeForeground": "#fafafa"
+    "panelTitle.activeForeground": "#fafafa",
+    "quickInput.background": "#141419",
+    "quickInput.foreground": "#e4e4e7",
+    "menu.background": "#16161c",
+    "menu.border": "#272730",
+    "menu.selectionBackground": "#271f14",
+    "menu.selectionForeground": "#fbbf24"
   }
 };
 
 fs.writeFileSync(path.join(userDir, "settings.json"), JSON.stringify(settings, null, 2));
-console.log("Elmas Amber Forge branding, French locale, and custom logos applied.");
-
+console.log("Elmas macOS Sequoia UI, Amber Forge branding, French locale, and custom logos applied.");

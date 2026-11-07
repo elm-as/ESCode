@@ -234,3 +234,4 @@ export function scanFlutterWorkspace(
 
   return { theme, screens, activeScreen };
 }
+

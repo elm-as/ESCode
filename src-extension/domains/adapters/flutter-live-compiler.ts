@@ -32,20 +32,71 @@ function escapeHtml(raw: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function formatInterpolatedText(rawText: string): string {
-  const escaped = escapeHtml(rawText);
-  return escaped
-    .replace(/\$\{?_(counter)\}?/g, `<span data-flutter-var="_counter">0</span>`)
-    .replace(/\$\{?(counter)\}?/g, `<span data-flutter-var="counter">0</span>`)
-    .replace(/\$\{?totalPoidsNet[^}]*\}?/g, "1 240.0")
-    .replace(/\$\{?fmt\.format\(totalRevenu\)\}?/g, "434 000")
-    .replace(/\$\{?fmt\.format\(totalPayeSaigneurs\)\}?/g, "186 000")
-    .replace(/\$\{?fmt\.format\(totalDepenses\)\}?/g, "42 500")
-    .replace(/\$\{?fmt\.format\(benefice\)\}?/g, "205 500")
-    .replace(/\$\{?monthLabel[^}]*\}?/g, "NOVEMBRE 2026");
+function extractDartStringLiteral(src: string): string | null {
+  const idxSingle = src.indexOf("'");
+  const idxDouble = src.indexOf('"');
+  let quote = "'";
+  let start = idxSingle;
+  if (idxSingle === -1 || (idxDouble !== -1 && idxDouble < idxSingle)) {
+    quote = '"';
+    start = idxDouble;
+  }
+  if (start === -1) return null;
+
+  let braceDepth = 0;
+  for (let i = start + 1; i < src.length; i++) {
+    const ch = src[i];
+    const prev = src[i - 1];
+    if (ch === "{" && prev === "$") {
+      braceDepth++;
+    } else if (ch === "}" && braceDepth > 0) {
+      braceDepth--;
+    } else if (ch === quote && braceDepth === 0 && prev !== "\\") {
+      return src.slice(start + 1, i);
+    }
+  }
+  return null;
 }
 
-function extractBalancedParen(source: string, startIdx: number): string {
+function formatInterpolatedText(rawText: string): string {
+  const replaced = rawText.replace(/\$\{([^}]+)\}|\$([a-zA-Z0-9_]+)/g, (_full, braced, simple) => {
+    const expr = (braced || simple || "").trim();
+    if (expr === "_counter" || expr === "counter") {
+      return `__ELMAS_COUNTER__`;
+    }
+    if (expr.includes("DateFormat") || expr.includes("monthLabel")) {
+      return "Novembre 2026";
+    }
+    if (expr.includes("totalPoidsNet") || expr.includes("totalBrut") || expr.includes("totalNet")) {
+      return "1 240.0";
+    }
+    if (
+      expr.includes("totalRevenu") ||
+      expr.includes("montantNetRecu") ||
+      expr.includes("gainNet") ||
+      expr.includes("benefice")
+    ) {
+      return "205 500";
+    }
+    if (expr.includes("totalPayeSaigneurs") || expr.includes("gainBrut")) {
+      return "186 000";
+    }
+    if (expr.includes("totalDepenses") || expr.includes("totalRetenues") || expr.includes("amount")) {
+      return "42 500";
+    }
+    if (expr.includes(".id")) return "1";
+    if (expr.includes(".name")) return "Champ Principal";
+    if (expr.includes(".length")) return "8";
+    return "0";
+  });
+
+  return escapeHtml(replaced).replace(
+    /__ELMAS_COUNTER__/g,
+    `<span data-flutter-var="_counter">0</span>`
+  );
+}
+
+export function extractBalancedParen(source: string, startIdx: number): string {
   let depth = 0;
   let inSingle = false;
   let inDouble = false;
@@ -87,9 +138,26 @@ function parseTextStyleCss(block: string, theme: FlutterThemeTokens, onDarkBg: b
   return styles.join("; ");
 }
 
+function stripDialogsAndModals(source: string): string {
+  const modalMarkers = [
+    "void _show",
+    "Future<void> _show",
+    "showDialog(",
+    "showModalBottomSheet(",
+  ];
+  let cutIdx = source.length;
+  for (const marker of modalMarkers) {
+    const idx = source.indexOf(marker);
+    if (idx !== -1 && idx < cutIdx) {
+      cutIdx = idx;
+    }
+  }
+  return source.slice(0, cutIdx);
+}
+
 function compileActionGrid(source: string, theme: FlutterThemeTokens): string {
   const actions: string[] = [];
-  const regex = /_actionButton\s*\([^,]+,\s*Icons\.([a-z0-9_]+)\s*,\s*(['"])([^'"]+)\2\s*,\s*([^,]+),\s*\(\)\s*\{([\s\S]*?)\}\s*\)/g;
+  const regex = /_actionButton\s*\(\s*context\s*,\s*Icons\.([a-z0-9_]+)\s*,\s*(['"])([^'"]+)\2\s*,\s*(?:const\s+)?([^,]+),\s*\(\)\s*\{([\s\S]*?)\}\s*\)/g;
   let m: RegExpExecArray | null;
   while ((m = regex.exec(source)) !== null) {
     const iconName = m[1];
@@ -114,12 +182,15 @@ function compileActionGrid(source: string, theme: FlutterThemeTokens): string {
   return `<div class="fl-action-grid">${actions.join("")}</div>`;
 }
 
-function compileFormFields(source: string, theme: FlutterThemeTokens): string {
+function compileFormFields(cleanSource: string): string {
   const fields: string[] = [];
+  const seen = new Set<string>();
   const fieldRegex = /_field\s*\([^,]+,\s*(['"])([^'"]+)\1/g;
   let m: RegExpExecArray | null;
-  while ((m = fieldRegex.exec(source)) !== null) {
+  while ((m = fieldRegex.exec(cleanSource)) !== null) {
     const label = escapeHtml(m[2]);
+    if (seen.has(label)) continue;
+    seen.add(label);
     fields.push(`
       <div class="fl-input-group">
         <label class="fl-input-label">${label}</label>
@@ -128,9 +199,11 @@ function compileFormFields(source: string, theme: FlutterThemeTokens): string {
     `);
   }
 
-  const decRegex = /InputDecoration\s*\([\s\S]*?labelText\s*:\s*(['"])([^'"]+)\1/g;
-  while ((m = decRegex.exec(source)) !== null) {
+  const decRegex = /InputDecoration\s*\([\s\S]{0,160}?labelText\s*:\s*(['"])([^'"]+)\1/g;
+  while ((m = decRegex.exec(cleanSource)) !== null) {
     const label = escapeHtml(m[2]);
+    if (seen.has(label)) continue;
+    seen.add(label);
     fields.push(`
       <div class="fl-input-group">
         <label class="fl-input-label">${label}</label>
@@ -142,7 +215,7 @@ function compileFormFields(source: string, theme: FlutterThemeTokens): string {
   return `<div style="width:100%; display:flex; flex-direction:column; gap:10px; margin:8px 0;">${fields.join("")}</div>`;
 }
 
-function compilePinKeypad(source: string, theme: FlutterThemeTokens): string {
+function compilePinKeypad(source: string): string {
   if (!source.includes("_buildKeypad()") && !source.includes("_enteredPin")) return "";
   return `
     <div class="fl-pin-dots" id="fl-pin-dots">
@@ -165,71 +238,19 @@ function compileScreenWidgets(
   theme: FlutterThemeTokens,
   hasDarkGradient: boolean
 ): string {
-  const source = screen.source;
+  const fullSource = screen.source;
+  const cleanSource = stripDialogsAndModals(fullSource);
   const parts: string[] = [];
 
-  // 1. Check Image.asset(...)
-  const imgMatch = source.match(/Image\.asset\(\s*(['"])([^'"]+)\1/);
+  const imgMatch = cleanSource.match(/Image\.asset\(\s*(['"])([^'"]+)\1/);
   if (imgMatch) {
     parts.push(
-      `<img src="/__asset/${imgMatch[2]}" style="width:76px; height:76px; border-radius:20px; object-fit:cover; box-shadow:0 8px 20px rgba(0,0,0,0.3); margin-bottom:12px;" onerror="this.style.display='none'" />`
+      `<img src="/__asset/${imgMatch[2]}" style="width:76px; height:76px; border-radius:20px; object-fit:cover; box-shadow:0 8px 20px rgba(0,0,0,0.3); margin-bottom:8px;" onerror="this.style.display='none'" />`
     );
   }
 
-  // 2. Parse primary build() widgets in order
-  const buildIdx = source.indexOf("Widget build(");
-  const mainSlice = buildIdx !== -1 ? source.slice(buildIdx) : source;
-  const fabIdx = mainSlice.indexOf("floatingActionButton:");
-  const bodySection = fabIdx !== -1 ? mainSlice.slice(0, fabIdx) : mainSlice;
-
-  const tokenRegex = /(?:const\s+|new\s+)?(Text|SizedBox|ElevatedButton|OutlinedButton|TextButton)\s*(?:\.icon\s*)?\(/g;
-  let match: RegExpExecArray | null;
-
-  while ((match = tokenRegex.exec(bodySection)) !== null) {
-    const widgetType = match[1];
-    const openParenIdx = match.index + match[0].length - 1;
-    const inner = extractBalancedParen(bodySection, openParenIdx);
-
-    if (widgetType === "Text") {
-      const strMatch = inner.match(/^\s*(['"])([\s\S]*?)\1/);
-      const ternaryMatch = !strMatch
-        ? inner.match(/\?\s*(['"])([\s\S]*?)\1\s*:\s*(['"])([\s\S]*?)\3/)
-        : null;
-
-      const rawStr = strMatch ? strMatch[2] : ternaryMatch ? ternaryMatch[4] : null;
-      if (rawStr && !rawStr.includes("AppBar")) {
-        const textVal = formatInterpolatedText(rawStr);
-        const styleCss = parseTextStyleCss(inner, theme, hasDarkGradient);
-        parts.push(`<div class="fl-text" style="${styleCss}">${textVal}</div>`);
-      }
-    } else if (widgetType === "SizedBox") {
-      const hMatch = inner.match(/height\s*:\s*([0-9.]+)/);
-      if (hMatch) {
-        const h = Math.min(parseFloat(hMatch[1]), 28);
-        parts.push(`<div style="height: ${h}px; width: 100%; flex-shrink: 0;"></div>`);
-      }
-    } else if (widgetType === "ElevatedButton" || widgetType === "OutlinedButton") {
-      const labelMatch = inner.match(/Text\(\s*(?:[a-zA-Z0-9_]+\s*\?\s*['"][^'"]+['"]\s*:\s*)?(['"])([\s\S]*?)\1/);
-      const label = labelMatch ? formatInterpolatedText(labelMatch[2]) : "Valider";
-      const bg = widgetType === "OutlinedButton" ? "transparent" : resolveDartColor(inner, theme, theme.primaryColor);
-      const border = widgetType === "OutlinedButton" ? `border:1.5px solid ${theme.primaryColor}; color:${theme.primaryColor};` : "";
-      parts.push(
-        `<button class="fl-btn" style="background:${bg}; ${border}" onclick="window.__incrementFlutterCounter()">${label}</button>`
-      );
-    }
-
-    tokenRegex.lastIndex = openParenIdx + inner.length + 1;
-  }
-
-  // 3. Inject specialized components (PIN Keypad, Form Fields, Action Grid, Financial Card)
-  const pinHtml = compilePinKeypad(source, theme);
-  if (pinHtml) parts.push(pinHtml);
-
-  const formHtml = compileFormFields(source, theme);
-  if (formHtml) parts.push(formHtml);
-
-  if (source.includes("_buildFinancialSummary")) {
-    parts.unshift(`
+  if (fullSource.includes("_buildFinancialSummary")) {
+    parts.push(`
       <div class="fl-summary-card" style="background:linear-gradient(135deg, ${theme.primaryColor}, #00251a);">
         <div style="font-size:11px; color:rgba(255,255,255,0.65); letter-spacing:1.2px;">NOVEMBRE 2026</div>
         <div style="font-size:28px; font-weight:800; color:#fff; margin:4px 0;">1 240.0 kg</div>
@@ -245,8 +266,67 @@ function compileScreenWidgets(
     `);
   }
 
-  const gridHtml = compileActionGrid(source, theme);
-  if (gridHtml) parts.push(gridHtml);
+  const gridHtml = compileActionGrid(fullSource, theme);
+  if (gridHtml) {
+    parts.push(`<div class="fl-text" style="font-size:16px; font-weight:700; width:100%; text-align:left; margin:4px 0;">Actions Rapides</div>`);
+    parts.push(gridHtml);
+  }
+
+  const formHtml = compileFormFields(cleanSource);
+  if (formHtml) parts.push(formHtml);
+
+  const buildIdx = cleanSource.indexOf("Widget build(");
+  const buildSlice = buildIdx !== -1 ? cleanSource.slice(buildIdx) : cleanSource;
+  const bodyIdx = buildSlice.indexOf("body:");
+  const fabIdx = buildSlice.indexOf("floatingActionButton:");
+  const bodySection =
+    bodyIdx !== -1
+      ? buildSlice.slice(bodyIdx + 5, fabIdx !== -1 ? fabIdx : undefined)
+      : buildSlice;
+
+  const tokenRegex = /(?:const\s+|new\s+)?(Text|SizedBox|ElevatedButton|OutlinedButton)\s*(?:\.icon\s*)?\(/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = tokenRegex.exec(bodySection)) !== null) {
+    const widgetType = match[1];
+    const openParenIdx = match.index + match[0].length - 1;
+    const inner = extractBalancedParen(bodySection, openParenIdx);
+
+    if (widgetType === "Text" && !fullSource.includes("_buildFinancialSummary")) {
+      const ternaryMatch = inner.match(/\?\s*(['"])([\s\S]*?)\1\s*:\s*(['"])([\s\S]*?)\3/);
+      const rawStr = ternaryMatch ? ternaryMatch[4] : extractDartStringLiteral(inner);
+
+      if (
+        rawStr &&
+        !rawStr.startsWith("Erreur") &&
+        !rawStr.startsWith("Chargement") &&
+        !rawStr.includes("_lockExpiry")
+      ) {
+        const textVal = formatInterpolatedText(rawStr);
+        const styleCss = parseTextStyleCss(inner, theme, hasDarkGradient);
+        parts.push(`<div class="fl-text" style="${styleCss}">${textVal}</div>`);
+      }
+    } else if (widgetType === "SizedBox" && !fullSource.includes("_buildFinancialSummary")) {
+      const hMatch = inner.match(/height\s*:\s*([0-9.]+)/);
+      if (hMatch) {
+        const h = Math.min(parseFloat(hMatch[1]), 18);
+        parts.push(`<div style="height: ${h}px; width: 100%; flex-shrink: 0;"></div>`);
+      }
+    } else if (widgetType === "ElevatedButton" || widgetType === "OutlinedButton") {
+      const labelMatch = inner.match(/Text\(\s*(?:[a-zA-Z0-9_]+\s*\?\s*['"][^'"]+['"]\s*:\s*)?(['"])([\s\S]*?)\1/);
+      const label = labelMatch ? formatInterpolatedText(labelMatch[2]) : "Valider";
+      const bg = widgetType === "OutlinedButton" ? "transparent" : resolveDartColor(inner, theme, theme.primaryColor);
+      const border = widgetType === "OutlinedButton" ? `border:1.5px solid ${theme.primaryColor}; color:${theme.primaryColor};` : "";
+      parts.push(
+        `<button class="fl-btn" style="background:${bg}; ${border}" onclick="window.__incrementFlutterCounter()">${label}</button>`
+      );
+    }
+
+    tokenRegex.lastIndex = openParenIdx + inner.length + 1;
+  }
+
+  const pinHtml = compilePinKeypad(fullSource);
+  if (pinHtml) parts.push(pinHtml);
 
   return parts.join("\n");
 }
@@ -280,7 +360,6 @@ export function compileFlutterWorkspace(snapshot: FlutterWorkspaceSnapshot): Com
 
   const src = activeScreen.source;
 
-  // Detect full-screen LinearGradient (e.g. LockScreen)
   let scaffoldGradient = "";
   const hasSliverAppBar = src.includes("SliverAppBar(");
   if (!hasSliverAppBar && src.includes("LinearGradient(")) {
@@ -301,8 +380,9 @@ export function compileFlutterWorkspace(snapshot: FlutterWorkspaceSnapshot): Com
   if (appBarIdx !== -1) {
     hasAppBar = true;
     const inner = extractBalancedParen(src, appBarIdx + 6);
-    const tMatch = inner.match(/Text\(\s*(?:[a-zA-Z0-9_]+\s*\?\s*['"][^'"]+['"]\s*:\s*)?(['"])([\s\S]*?)\1/);
-    appBarTitle = tMatch ? formatInterpolatedText(tMatch[2]) : activeScreen.shortLabel;
+    const ternaryMatch = inner.match(/Text\(\s*[a-zA-Z0-9_]+\s*\?\s*(['"])([^'"]+)\1\s*:\s*(['"])([^'"]+)\3/);
+    const rawTitle = ternaryMatch ? ternaryMatch[4] : extractDartStringLiteral(inner);
+    appBarTitle = rawTitle ? formatInterpolatedText(rawTitle) : activeScreen.shortLabel;
     appBarBg = resolveDartColor(inner, theme, appBarBg);
   } else if (hasSliverAppBar) {
     hasAppBar = true;
@@ -314,7 +394,7 @@ export function compileFlutterWorkspace(snapshot: FlutterWorkspaceSnapshot): Com
   let hasFab = false;
   let fabBg = theme.primaryColor;
   let fabLabel = "";
-  let fabIcon = "+";
+  const fabIcon = "+";
 
   const fabIdx = src.indexOf("FloatingActionButton");
   if (fabIdx !== -1) {

@@ -2,17 +2,17 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDeviceFrameStyles = getDeviceFrameStyles;
 /**
- * Native VS Code Theme-Integrated Stylesheet for Elmas Studio Mobile Preview.
- * Uses VS Code CSS variables, zero-overflow sizer layout, and monochrome SVG icons.
+ * macOS Sequoia / Xcode Simulator-inspired Stylesheet for Elmas Studio Mobile Preview.
+ * Uses frosted glass toolbars, Natural Titanium bezel shadows, and zero-overflow sizer layout.
  * Strictly compliant with ELMAS.md: < 350 lines, pure function.
  */
 function getDeviceFrameStyles(width, height) {
     return `
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-font-smoothing: antialiased; }
     html, body {
-      background-color: var(--vscode-editor-background, #1e1e1e);
-      color: var(--vscode-foreground, #cccccc);
-      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+      background-color: var(--vscode-editor-background, #111115);
+      color: var(--vscode-foreground, #e4e4e7);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
       width: 100%;
       height: 100vh;
       display: flex;
@@ -20,11 +20,13 @@ function getDeviceFrameStyles(width, height) {
       overflow: hidden;
     }
 
-    /* Compact Native IDE Top Bar */
+    /* macOS Xcode Frosted Glass Top Toolbar */
     .top-bar {
-      height: 36px;
-      background: var(--vscode-editor-background, #1e1e1e);
-      border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.07));
+      height: 38px;
+      background: rgba(16, 16, 20, 0.82);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -50,43 +52,45 @@ function getDeviceFrameStyles(width, height) {
     }
 
     .icon-btn {
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       background: transparent;
-      border: none;
-      color: var(--vscode-icon-foreground, #9da5b4);
-      border-radius: 4px;
+      border: 1px solid transparent;
+      color: #a1a1aa;
+      border-radius: 6px;
       cursor: pointer;
       flex-shrink: 0;
-      transition: background 0.12s, color 0.12s;
+      transition: all 0.14s ease;
     }
     .icon-btn:hover {
-      background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.08));
-      color: var(--vscode-foreground, #ffffff);
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(255, 255, 255, 0.08);
+      color: #fafafa;
     }
     .icon-btn svg {
       width: 14px;
       height: 14px;
       stroke: currentColor;
       fill: none;
-      stroke-width: 1.6;
+      stroke-width: 1.65;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
 
-    /* URL / Route Address Pill */
+    /* macOS Safari-Style Capsule Address Bar */
     .address-pill {
       width: 100%;
-      height: 24px;
-      background: var(--vscode-input-background, #2a2a2d);
-      border: 1px solid var(--vscode-input-border, rgba(255, 255, 255, 0.06));
-      border-radius: 12px;
+      height: 25px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+      border-radius: 7px;
       padding: 0 10px;
       font-size: 11px;
-      color: var(--vscode-descriptionForeground, #858585);
+      color: #71717a;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -94,18 +98,18 @@ function getDeviceFrameStyles(width, height) {
       white-space: nowrap;
     }
     .address-pill .path-text {
-      color: var(--vscode-input-foreground, #cccccc);
-      font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+      color: #d4d4d8;
+      font-family: "SF Mono", "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
       font-size: 11px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    /* Compact Toolbar Pill Buttons */
+    /* macOS Segmented Pill Buttons */
     .pill-btn {
-      height: 24px;
-      padding: 0 8px;
-      border-radius: 4px;
+      height: 25px;
+      padding: 0 9px;
+      border-radius: 6px;
       font-size: 11px;
       font-weight: 500;
       cursor: pointer;
@@ -114,13 +118,15 @@ function getDeviceFrameStyles(width, height) {
       gap: 5px;
       white-space: nowrap;
       flex-shrink: 0;
-      border: 1px solid var(--vscode-input-border, rgba(255, 255, 255, 0.08));
-      background: var(--vscode-input-background, #2a2a2d);
-      color: var(--vscode-foreground, #cccccc);
-      transition: background 0.12s;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.03) 100%);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+      color: #e4e4e7;
+      transition: all 0.14s ease;
     }
     .pill-btn:hover {
-      background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.15);
     }
     .pill-btn svg {
       width: 12px;
@@ -130,16 +136,17 @@ function getDeviceFrameStyles(width, height) {
       stroke-width: 1.8;
     }
     .pill-btn.run-active {
-      color: #f59e0b;
-      border-color: rgba(245, 158, 11, 0.35);
-      background: rgba(217, 119, 6, 0.12);
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.38);
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.18) 0%, rgba(217, 119, 6, 0.09) 100%);
+      box-shadow: 0 1px 4px rgba(245, 158, 11, 0.15), inset 0 1px 0 rgba(251, 191, 36, 0.2);
     }
     .pill-btn.run-idle {
       color: #fbbf24;
       border-color: rgba(245, 158, 11, 0.35);
     }
 
-    /* Viewport Canvas — Zero Scrollbar, True Centering */
+    /* Viewport Canvas — Studio Spotlight & Zero Scrollbar */
     .viewport-canvas {
       flex: 1;
       width: 100%;
@@ -147,13 +154,15 @@ function getDeviceFrameStyles(width, height) {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--vscode-editor-background, #1e1e1e);
+      background:
+        radial-gradient(circle at 50% 46%, rgba(255, 255, 255, 0.035) 0%, rgba(0, 0, 0, 0) 68%),
+        var(--vscode-editor-background, #111115);
       position: relative;
       min-height: 0;
       min-width: 0;
     }
 
-    /* Left Floating Zoom Pill (Monochrome SVG) */
+    /* Left Floating Frosted Glass Zoom Pill */
     .floating-zoom-pill {
       position: absolute;
       left: 12px;
@@ -162,13 +171,14 @@ function getDeviceFrameStyles(width, height) {
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: var(--vscode-input-background, #252528);
-      border: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
+      background: rgba(24, 24, 30, 0.78);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 16px;
       padding: 4px 3px;
       gap: 2px;
       z-index: 45;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
     .zoom-btn {
@@ -179,16 +189,16 @@ function getDeviceFrameStyles(width, height) {
       justify-content: center;
       background: transparent;
       border: none;
-      color: var(--vscode-icon-foreground, #9da5b4);
+      color: #a1a1aa;
       font-size: 10px;
       font-weight: 600;
       cursor: pointer;
       border-radius: 12px;
-      transition: background 0.12s, color 0.12s;
+      transition: all 0.12s ease;
     }
     .zoom-btn:hover {
-      background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
-      color: var(--vscode-foreground, #ffffff);
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
     }
     .zoom-btn svg {
       width: 13px;
@@ -198,13 +208,12 @@ function getDeviceFrameStyles(width, height) {
       stroke-width: 1.6;
     }
 
-    /* Exact Visual Box Sizer to eliminate ghost scrollbars */
     .canvas-sizer {
       position: relative;
       flex-shrink: 0;
     }
 
-    /* iPhone 15 Pro Precision Chassis */
+    /* iPhone 15 Pro Natural Titanium Multi-Layer Bezel */
     .device-chassis {
       position: absolute;
       top: 0;
@@ -213,17 +222,17 @@ function getDeviceFrameStyles(width, height) {
       height: ${height}px;
       transform-origin: top left;
       background: #ffffff;
-      border: 6px solid #18181b;
+      border: 7px solid #141417;
       border-radius: 54px;
       box-shadow:
-        0 0 0 1.5px #3f3f46,
-        0 20px 50px rgba(0, 0, 0, 0.65);
+        0 0 0 1px #52525b,
+        0 0 0 3px #27272a,
+        0 28px 65px rgba(0, 0, 0, 0.72);
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
-    /* Dynamic Island */
     .dynamic-island {
       position: absolute;
       top: 11px;
@@ -237,7 +246,6 @@ function getDeviceFrameStyles(width, height) {
       pointer-events: none;
     }
 
-    /* Dedicated Status Bar Row */
     .status-bar {
       height: 48px;
       background: #ffffff;
@@ -266,7 +274,6 @@ function getDeviceFrameStyles(width, height) {
       fill: currentColor;
     }
 
-    /* Screen Surface */
     .screen-surface {
       flex: 1;
       width: 100%;
@@ -285,7 +292,6 @@ function getDeviceFrameStyles(width, height) {
       flex: 1;
     }
 
-    /* Home Indicator Row */
     .home-bar-row {
       height: 22px;
       background: #ffffff;
@@ -303,11 +309,12 @@ function getDeviceFrameStyles(width, height) {
       opacity: 0.85;
     }
 
-    /* Bottom Status / Device Picker Bar */
+    /* Bottom Frosted Bar */
     .bottom-bar {
       height: 32px;
-      background: var(--vscode-editor-background, #1e1e1e);
-      border-top: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.07));
+      background: rgba(16, 16, 20, 0.82);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -318,12 +325,14 @@ function getDeviceFrameStyles(width, height) {
     }
 
     .device-picker-pill {
-      background: var(--vscode-input-background, #252528);
-      border: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
-      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      border-radius: 999px;
       padding: 2px 12px;
       font-size: 11px;
-      color: var(--vscode-foreground, #cccccc);
+      font-weight: 500;
+      color: #e4e4e7;
       cursor: pointer;
       outline: none;
       height: 22px;
