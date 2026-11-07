@@ -34,36 +34,45 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FlutterAdapter = void 0;
+const http = __importStar(require("http"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const process_manager_1 = require("../process/process-manager");
 const sdk_detector_1 = require("../sdk/sdk-detector");
+const flutter_live_compiler_1 = require("./flutter-live-compiler");
 class FlutterAdapter {
     name = "Flutter";
     framework = "flutter";
     currentStatus = { state: "idle", mode: "fast" };
     activeProcessId = null;
+    activeAppId = null;
+    restartRequestId = 1;
+    fastServer = null;
+    sseClients = [];
+    projectPath = "";
+    memoryDartBuffer = null;
     async detectProject(projectPath) {
         const pubspec = path.join(projectPath, "pubspec.yaml");
         return fs.existsSync(pubspec);
     }
     async validateEnvironment(mode) {
+        if (mode === "fast") {
+            return { valid: true };
+        }
         const toolchain = await sdk_detector_1.sdkDetector.scanToolchain();
         const hasFlutter = toolchain.tools.some((t) => t.name === "Flutter" && t.installed);
         if (!hasFlutter) {
             return {
                 valid: false,
-                reason: "Flutter SDK was not detected in PATH or Flutter SDK directory.",
+                reason: "Flutter SDK non détecté dans le PATH.",
             };
         }
-        if (mode === "native") {
-            const hasAdb = toolchain.tools.some((t) => t.name.includes("ADB") && t.installed);
-            if (!hasAdb) {
-                return {
-                    valid: false,
-                    reason: "Android ADB is required for Flutter native preview target.",
-                };
-            }
+        const hasAdb = toolchain.tools.some((t) => t.name.includes("ADB") && t.installed);
+        if (!hasAdb) {
+            return {
+                valid: false,
+                reason: "Android ADB est requis pour le mode natif Flutter.",
+            };
         }
         return { valid: true };
     }
@@ -72,42 +81,169 @@ class FlutterAdapter {
     }
     async start(options) {
         this.currentStatus = { state: "starting", mode: options.mode, port: options.port };
-        const processId = `flutter_${Date.now()}`;
-        this.activeProcessId = processId;
-        const command = "flutter";
-        const args = options.mode === "fast"
-            ? ["run", "-d", "web-server", `--web-port=${options.port}`, "--web-hostname=127.0.0.1"]
-            : ["run", "-d", "android"];
-        try {
-            process_manager_1.processManager.startProcess({
-                id: processId,
-                command,
-                args,
-                cwd: options.projectPath,
-            });
-            const previewUrl = `http://127.0.0.1:${options.port}`;
-            this.currentStatus = { state: "running", mode: options.mode, port: options.port };
-            return {
-                previewUrl,
-                port: options.port,
-                processId,
-            };
+        this.projectPath = options.projectPath;
+        this.memoryDartBuffer = null;
+        await this.stop();
+        if (options.mode === "fast") {
+            return this.startFastLiveServer(options);
         }
-        catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            this.currentStatus = { state: "error", mode: options.mode, error: msg };
-            throw new Error(`Failed to start Flutter engine: ${msg}`);
+        return this.startNativeAndroidRunner(options);
+    }
+    startFastLiveServer(options) {
+        return new Promise((resolve, reject) => {
+            const server = http.createServer((req, res) => {
+                this.handleFastHttpRequest(req, res);
+            });
+            server.on("error", (err) => {
+                this.currentStatus = { state: "error", mode: options.mode, error: err.message };
+                reject(err);
+            });
+            server.listen(options.port, "127.0.0.1", () => {
+                this.fastServer = server;
+                this.currentStatus = { state: "running", mode: options.mode, port: options.port };
+                resolve({
+                    previewUrl: `http://127.0.0.1:${options.port}`,
+                    port: options.port,
+                    processId: `flutter_fast_${options.port}`,
+                });
+            });
+        });
+    }
+    startNativeAndroidRunner(options) {
+        const processId = `flutter_native_${Date.now()}`;
+        this.activeProcessId = processId;
+        this.activeAppId = null;
+        process_manager_1.processManager.startProcess({
+            id: processId,
+            command: "flutter",
+            args: ["run", "--machine", "-d", "android"],
+            cwd: options.projectPath,
+            onStdout: (line) => this.handleMachineStdout(line),
+        });
+        const previewUrl = `http://127.0.0.1:${options.port}`;
+        this.currentStatus = { state: "running", mode: options.mode, port: options.port };
+        return {
+            previewUrl,
+            port: options.port,
+            processId,
+        };
+    }
+    handleMachineStdout(line) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("[{"))
+            return;
+        try {
+            const events = JSON.parse(trimmed);
+            for (const evt of events) {
+                if (evt.event === "app.start" && evt.params?.appId) {
+                    this.activeAppId = evt.params.appId;
+                }
+            }
+        }
+        catch {
+            // Non-JSON stdout line
+        }
+    }
+    readCurrentDartSource() {
+        if (this.memoryDartBuffer !== null) {
+            return this.memoryDartBuffer;
+        }
+        const mainDartPath = path.join(this.projectPath, "lib", "main.dart");
+        if (fs.existsSync(mainDartPath)) {
+            try {
+                return fs.readFileSync(mainDartPath, "utf-8");
+            }
+            catch {
+                return "";
+            }
+        }
+        return "";
+    }
+    handleFastHttpRequest(req, res) {
+        const rawUrl = req.url || "/";
+        if (rawUrl === "/__elmas_live_reload") {
+            res.writeHead(200, {
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                Connection: "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+            });
+            res.write("data: connected\n\n");
+            this.sseClients.push(res);
+            req.on("close", () => {
+                this.sseClients = this.sseClients.filter((c) => c !== res);
+            });
+            return;
+        }
+        const source = this.readCurrentDartSource();
+        const parsed = (0, flutter_live_compiler_1.parseFlutterSource)(source);
+        const html = (0, flutter_live_compiler_1.renderFlutterPreviewDocument)(parsed);
+        res.writeHead(200, {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+        });
+        res.end(html);
+    }
+    async onDocumentEdited(filePath, content) {
+        if (!filePath.toLowerCase().endsWith(".dart")) {
+            return;
+        }
+        this.memoryDartBuffer = content;
+        this.broadcastLivePatch(content);
+    }
+    async reload() {
+        const source = this.readCurrentDartSource();
+        this.broadcastLivePatch(source);
+        if (this.activeProcessId) {
+            if (this.activeAppId) {
+                const rpc = JSON.stringify([
+                    {
+                        method: "app.restart",
+                        id: this.restartRequestId++,
+                        params: { appId: this.activeAppId, fullRestart: false },
+                    },
+                ]);
+                process_manager_1.processManager.writeStdin(this.activeProcessId, `${rpc}\n`);
+            }
+            else {
+                process_manager_1.processManager.writeStdin(this.activeProcessId, "r\n");
+            }
+        }
+    }
+    broadcastLivePatch(dartSource) {
+        if (this.sseClients.length === 0)
+            return;
+        const parsed = (0, flutter_live_compiler_1.parseFlutterSource)(dartSource);
+        const message = JSON.stringify({ type: "flutter-patch", payload: parsed });
+        for (const client of this.sseClients) {
+            try {
+                client.write(`data: ${message}\n\n`);
+            }
+            catch {
+                // Ignore closed socket
+            }
         }
     }
     async stop() {
+        if (this.fastServer) {
+            for (const client of this.sseClients) {
+                try {
+                    client.end();
+                }
+                catch { }
+            }
+            this.sseClients = [];
+            await new Promise((resolve) => {
+                this.fastServer?.close(() => resolve());
+                this.fastServer = null;
+            });
+        }
         if (this.activeProcessId) {
             process_manager_1.processManager.stopProcess(this.activeProcessId);
             this.activeProcessId = null;
+            this.activeAppId = null;
         }
         this.currentStatus = { state: "stopped", mode: "fast" };
-    }
-    async reload() {
-        // Flutter reload triggers via stdin or terminal
     }
     getStatus() {
         return this.currentStatus;
@@ -116,10 +252,10 @@ class FlutterAdapter {
         return {
             supportsFastPreview: true,
             supportsNativePreview: true,
-            supportsHmr: false,
+            supportsHmr: true,
             supportsHotRestart: true,
             supportsElementInspection: true,
-            targetPlatform: "Flutter Engine (CanvasKit / Skia)",
+            targetPlatform: "Flutter Engine (Live Hot-Swap / Android ART)",
         };
     }
 }

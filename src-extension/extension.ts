@@ -6,6 +6,8 @@ import { sdkDetector } from "./domains/sdk/sdk-detector";
 let previewProvider: DevicePreviewViewProvider;
 let runStatusBarItem: vscode.StatusBarItem;
 let modeStatusBarItem: vscode.StatusBarItem;
+let liveEditTimer: ReturnType<typeof setTimeout> | null = null;
+let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function activate(context: vscode.ExtensionContext): void {
   previewProvider = new DevicePreviewViewProvider();
@@ -63,22 +65,40 @@ export function activate(context: vscode.ExtensionContext): void {
   modeStatusBarItem.show();
   context.subscriptions.push(modeStatusBarItem);
 
-  // Auto-detect project on folder open
-  const folders = vscode.workspace.workspaceFolders;
-  if (folders && folders.length > 0) {
-    adapterManager.detectWorkspaceFramework(folders[0].uri.fsPath).then((fw) => {
-      if (fw !== "unknown") {
-        const label = fw === "vanilla_web" ? "HTML / CSS / JS" : fw.toUpperCase();
-        vscode.window.showInformationMessage(
-          `Elmas Studio : Projet ${label} détecté. Prêt pour l'aperçu mobile.`
-        );
-      }
-    });
-  }
-
-  // Auto-reload preview on file save
+  // 4. Ultra-reactive keystroke listener (zero-save instant live preview)
   context.subscriptions.push(
-    vscode.workspace.onDidSaveTextDocument(async () => {
+    vscode.workspace.onDidChangeTextDocument((event) => {
+      const doc = event.document;
+      if (doc.uri.scheme !== "file" || event.contentChanges.length === 0) {
+        return;
+      }
+
+      const filePath = doc.uri.fsPath;
+      const content = doc.getText();
+
+      if (liveEditTimer) clearTimeout(liveEditTimer);
+      liveEditTimer = setTimeout(() => {
+        adapterManager.notifyDocumentEdited(filePath, content);
+      }, 20);
+
+      if (autoSaveTimer) clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(async () => {
+        if (doc.isDirty && !doc.isUntitled) {
+          try {
+            await doc.save();
+          } catch {
+            // Ignore save conflicts while typing
+          }
+        }
+      }, 180);
+    })
+  );
+
+  // 5. Auto-reload preview on file save
+  context.subscriptions.push(
+    vscode.workspace.onDidSaveTextDocument(async (doc) => {
+      if (doc.uri.scheme !== "file") return;
+      await adapterManager.notifyDocumentEdited(doc.uri.fsPath, doc.getText());
       await adapterManager.reloadProject();
     })
   );

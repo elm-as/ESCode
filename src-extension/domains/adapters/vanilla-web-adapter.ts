@@ -33,26 +33,63 @@ const MIME_MAP: Record<string, string> = {
 const LIVE_RELOAD_SNIPPET = `
 <script id="__elmas_reload">
   (() => {
+    function hotSwapHtml() {
+      fetch(window.location.href, { cache: 'no-store' })
+        .then((r) => r.text())
+        .then((html) => {
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          const scriptEl = doc.getElementById('__elmas_reload');
+          if (scriptEl) scriptEl.remove();
+          const currentScript = document.getElementById('__elmas_reload');
+          Array.from(document.body.childNodes).forEach((node) => {
+            if (node !== currentScript) node.remove();
+          });
+          Array.from(doc.body.childNodes).forEach((node) => {
+            document.body.insertBefore(node, currentScript);
+          });
+          const oldStyles = document.head.querySelectorAll('style');
+          const newStyles = doc.head.querySelectorAll('style');
+          oldStyles.forEach((s) => s.remove());
+          newStyles.forEach((s) => document.head.appendChild(s));
+        })
+        .catch(() => window.location.reload());
+    }
+
+    function hotSwapCss() {
+      document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
+        const href = link.getAttribute('href');
+        if (!href) return;
+        const base = href.split('?')[0];
+        link.setAttribute('href', base + '?t=' + Date.now());
+      });
+    }
+
     try {
       const es = new EventSource('/__elmas_live_reload');
       es.onmessage = (e) => {
-        if (e.data === 'reload') window.location.reload();
+        if (e.data === 'html-update') hotSwapHtml();
+        else if (e.data === 'css-update') hotSwapCss();
+        else if (e.data === 'reload') window.location.reload();
       };
     } catch {}
   })();
 </script>
 `;
 
+function normalizeKey(filePath: string): string {
+  return path.resolve(filePath).toLowerCase();
+}
+
 function formatHtmlForMobile(rawHtml: string): string {
   const hasHtmlTag = rawHtml.toLowerCase().includes("<html");
-  const hasViewport = rawHtml.toLowerCase().includes("name=\"viewport\"");
+  const hasViewport = rawHtml.toLowerCase().includes('name="viewport"');
 
   if (hasHtmlTag) {
     let result = rawHtml;
     if (!hasViewport && result.includes("<head>")) {
       result = result.replace(
         "<head>",
-        "<head>\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">"
+        '<head>\n  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">'
       );
     }
     if (result.includes("</body>")) {
@@ -132,7 +169,7 @@ export class VanillaWebAdapter implements IFrameworkAdapter {
   private currentStatus: AdapterStatus = { state: "idle", mode: "fast" };
   private server: http.Server | null = null;
   private sseClients: http.ServerResponse[] = [];
-  private activePort: number = 0;
+  private memoryBuffers: Map<string, string> = new Map();
 
   async detectProject(projectPath: string): Promise<boolean> {
     const hasIndexHtml = fs.existsSync(path.join(projectPath, "index.html"));
@@ -160,7 +197,7 @@ export class VanillaWebAdapter implements IFrameworkAdapter {
     if (mode === "native") {
       return {
         valid: false,
-        reason: "Vanilla HTML/CSS/JS runs directly in Web targets. For native Android APK, use React Native, Flutter or Compose.",
+        reason: "HTML/CSS/JS s'exécute directement en mode Rapide Web.",
       };
     }
     return { valid: true };
@@ -172,7 +209,7 @@ export class VanillaWebAdapter implements IFrameworkAdapter {
 
   async start(options: AdapterStartOptions): Promise<AdapterRunResult> {
     this.currentStatus = { state: "starting", mode: options.mode, port: options.port };
-    this.activePort = options.port;
+    this.memoryBuffers.clear();
 
     await this.stop();
 
@@ -213,10 +250,27 @@ export class VanillaWebAdapter implements IFrameworkAdapter {
     this.currentStatus = { state: "stopped", mode: "fast" };
   }
 
+  async onDocumentEdited(filePath: string, content: string): Promise<void> {
+    this.memoryBuffers.set(normalizeKey(filePath), content);
+    const ext = path.extname(filePath).toLowerCase();
+
+    if (ext === ".html" || ext === ".htm") {
+      this.broadcastSse("html-update");
+    } else if (ext === ".css") {
+      this.broadcastSse("css-update");
+    } else {
+      this.broadcastSse("reload");
+    }
+  }
+
   async reload(): Promise<void> {
+    this.broadcastSse("html-update");
+  }
+
+  private broadcastSse(eventData: string): void {
     for (const client of this.sseClients) {
       try {
-        client.write("data: reload\n\n");
+        client.write(`data: ${eventData}\n\n`);
       } catch {
         // Disconnected client
       }
@@ -273,7 +327,10 @@ export class VanillaWebAdapter implements IFrameworkAdapter {
       filePath = path.join(filePath, "index.html");
     }
 
-    if (!fs.existsSync(filePath)) {
+    const memKey = normalizeKey(filePath);
+    const hasInMemory = this.memoryBuffers.has(memKey);
+
+    if (!hasInMemory && !fs.existsSync(filePath)) {
       res.writeHead(404, { "Content-Type": "text/plain" });
       res.end("404 Not Found");
       return;
@@ -284,15 +341,23 @@ export class VanillaWebAdapter implements IFrameworkAdapter {
 
     try {
       if (ext === ".html" || ext === ".htm") {
-        const rawContent = fs.readFileSync(filePath, "utf-8");
+        const rawContent = hasInMemory
+          ? this.memoryBuffers.get(memKey)!
+          : fs.readFileSync(filePath, "utf-8");
         const formatted = formatHtmlForMobile(rawContent);
-        res.writeHead(200, { "Content-Type": mime });
+        res.writeHead(200, { "Content-Type": mime, "Cache-Control": "no-store" });
         res.end(formatted);
         return;
       }
 
+      if (hasInMemory) {
+        res.writeHead(200, { "Content-Type": mime, "Cache-Control": "no-store" });
+        res.end(this.memoryBuffers.get(memKey)!);
+        return;
+      }
+
       const stream = fs.createReadStream(filePath);
-      res.writeHead(200, { "Content-Type": mime });
+      res.writeHead(200, { "Content-Type": mime, "Cache-Control": "no-store" });
       stream.pipe(res);
     } catch {
       res.writeHead(500, { "Content-Type": "text/plain" });

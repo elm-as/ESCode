@@ -43,6 +43,7 @@ export class ExtensionProcessManager {
       env: { ...process.env, ...options.env },
       shell: true,
       windowsHide: true,
+      stdio: ["pipe", "pipe", "pipe"],
     });
 
     child.stdout?.on("data", (chunk: Buffer) => {
@@ -66,6 +67,18 @@ export class ExtensionProcessManager {
 
     this.activeProcesses.set(options.id, child);
     return child;
+  }
+
+  /**
+   * Writes a command or JSON-RPC message directly to a running process's stdin.
+   */
+  writeStdin(id: string, input: string): boolean {
+    const child = this.activeProcesses.get(id);
+    if (!child || !child.stdin || !child.stdin.writable) {
+      return false;
+    }
+    child.stdin.write(input);
+    return true;
   }
 
   stopProcess(id: string): void {

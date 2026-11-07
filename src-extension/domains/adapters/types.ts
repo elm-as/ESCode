@@ -44,7 +44,7 @@ export interface IFrameworkAdapter {
   start(options: AdapterStartOptions): Promise<AdapterRunResult>;
   stop(): Promise<void>;
   reload(): Promise<void>;
+  onDocumentEdited?(filePath: string, content: string): Promise<void>;
   getStatus(): AdapterStatus;
   getCapabilities(): AdapterCapabilities;
 }
-

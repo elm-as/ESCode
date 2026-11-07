@@ -140,7 +140,7 @@ const settings = {
   "workbench.sideBar.location": "left",
   "workbench.editor.openSideBySideDirection": "right",
   "files.autoSave": "afterDelay",
-  "files.autoSaveDelay": 300,
+  "files.autoSaveDelay": 100,
   "elmasStudio.sdkPaths.androidSdk": "C:\\Users\\elmas\\AppData\\Local\\Android\\Sdk",
   "workbench.colorCustomizations": {
     "titleBar.activeBackground": "#0d0d0f",
@@ -195,3 +195,4 @@ const settings = {
 
 fs.writeFileSync(path.join(userDir, "settings.json"), JSON.stringify(settings, null, 2));
 console.log("Elmas Amber Forge branding, French locale, and custom logos applied.");
+

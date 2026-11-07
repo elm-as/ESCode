@@ -144,7 +144,8 @@ class DevicePreviewViewProvider {
                 this.stopCurrentProject();
                 break;
             case "reload":
-                this.refreshWebviews();
+                adapter_manager_1.adapterManager.reloadProject();
+                this.reloadFrameOnly();
                 break;
             case "openLogs":
                 vscode.commands.executeCommand("workbench.action.output.toggleOutput");
@@ -155,6 +156,14 @@ class DevicePreviewViewProvider {
             case "screenshot":
                 vscode.window.showInformationMessage("Elmas Studio : Capture d'écran mobile enregistrée.");
                 break;
+        }
+    }
+    reloadFrameOnly() {
+        if (this.currentView) {
+            this.currentView.webview.postMessage({ type: "reloadFrame" });
+        }
+        if (this.currentPanel) {
+            this.currentPanel.webview.postMessage({ type: "reloadFrame" });
         }
     }
     setMode(mode) {
@@ -190,7 +199,6 @@ class DevicePreviewViewProvider {
             this.previewUrl = result.previewUrl;
             this.status = "running";
             this.refreshWebviews();
-            vscode.window.showInformationMessage(`Elmas Studio : Aperçu actif sur ${result.previewUrl}`);
         }
         catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -205,7 +213,6 @@ class DevicePreviewViewProvider {
         this.status = "idle";
         this.previewUrl = null;
         this.refreshWebviews();
-        vscode.window.showInformationMessage("Elmas Studio : Serveur d'aperçu mobile arrêté.");
     }
     refreshWebviews() {
         if (this.currentView) {

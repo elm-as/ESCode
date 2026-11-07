@@ -62,6 +62,18 @@ export function generateDeviceHtml(options: DeviceHtmlOptions): string {
       vscode.postMessage({ type, value });
     }
 
+    window.addEventListener("message", (event) => {
+      const msg = event.data;
+      if (!msg) return;
+      if (msg.type === "reloadFrame") {
+        const frame = document.getElementById("preview-frame");
+        if (frame && frame.src) {
+          const base = frame.src.split("?")[0];
+          frame.src = base + "?t=" + Date.now();
+        }
+      }
+    });
+
     let currentScale = 1.0;
     let isFitMode = true;
     const devW = ${width};

@@ -35,15 +35,15 @@ class ExtensionAdapterManager {
     async startProject(workspacePath, mode) {
         const framework = await this.detectWorkspaceFramework(workspacePath);
         if (framework === "unknown") {
-            throw new Error("No supported mobile framework or HTML project detected in workspace.");
+            throw new Error("Aucun framework mobile ou projet HTML détecté dans l'espace de travail.");
         }
         const adapter = this.getAdapter(framework);
         if (!adapter) {
-            throw new Error(`No adapter found for framework ${framework}`);
+            throw new Error(`Aucun adaptateur trouvé pour ${framework}`);
         }
         const validation = await adapter.validateEnvironment(mode);
         if (!validation.valid) {
-            throw new Error(validation.reason || "Environment validation failed.");
+            throw new Error(validation.reason || "Validation de l'environnement échouée.");
         }
         if (this.currentRunningAdapter) {
             await this.currentRunningAdapter.stop();
@@ -69,6 +69,11 @@ class ExtensionAdapterManager {
     async reloadProject() {
         if (this.currentRunningAdapter) {
             await this.currentRunningAdapter.reload();
+        }
+    }
+    async notifyDocumentEdited(filePath, content) {
+        if (this.currentRunningAdapter && this.currentRunningAdapter.onDocumentEdited) {
+            await this.currentRunningAdapter.onDocumentEdited(filePath, content);
         }
     }
     getCurrentRunResult() {
