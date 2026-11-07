@@ -182,4 +182,30 @@ export function generateMacosIconTheme(desktopDir) {
   };
 
   fs.writeFileSync(path.join(extDir, "package.json"), JSON.stringify(pkgJson, null, 2), "utf8");
+
+  // Also install as built-in extension in resources/app/extensions/elmas-macos-icons so VSCodium always loads it
+  const builtinExtDir = path.join(desktopDir, "resources/app/extensions/elmas-macos-icons");
+  fs.cpSync(extDir, builtinExtDir, { recursive: true, force: true });
+
+  // Register in data/extensions/extensions.json if present
+  const extManifestPath = path.join(desktopDir, "data/extensions/extensions.json");
+  if (fs.existsSync(extManifestPath)) {
+    try {
+      const list = JSON.parse(fs.readFileSync(extManifestPath, "utf8"));
+      const normalizedPath = "/" + extDir.replace(/\\/g, "/");
+      const entry = {
+        identifier: { id: "elmascore.elmas-macos-icons" },
+        version: "1.0.0",
+        location: { $mid: 1, path: normalizedPath, scheme: "file" },
+        relativeLocation: "elmas-macos-icons",
+      };
+      const idx = list.findIndex((item) => item?.identifier?.id === "elmascore.elmas-macos-icons");
+      if (idx >= 0) list[idx] = entry;
+      else list.push(entry);
+      fs.writeFileSync(extManifestPath, JSON.stringify(list), "utf8");
+    } catch {
+      // Ignore manifest parse error
+    }
+  }
 }
+
