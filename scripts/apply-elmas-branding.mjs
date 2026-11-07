@@ -205,6 +205,8 @@ const settings = {
   "editor.scrollbar.horizontalScrollbarSize": 6,
   "workbench.tree.indent": 16,
   "workbench.tree.renderIndentGuides": "onHover",
+  "workbench.tree.enableStickyScroll": false,
+  "editor.stickyScroll.enabled": false,
   "window.commandCenter": true,
   "elmasStudio.sdkPaths.androidSdk": "C:\\Users\\elmas\\AppData\\Local\\Android\\Sdk",
   "workbench.colorCustomizations": {

@@ -4,11 +4,7 @@ exports.extractBalancedParen = extractBalancedParen;
 exports.compileFlutterWorkspace = compileFlutterWorkspace;
 const flutter_project_scanner_1 = require("./flutter-project-scanner");
 function escapeHtml(raw) {
-    return raw
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+    return raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function extractDartStringLiteral(src) {
     const idxSingle = src.indexOf("'");
@@ -25,42 +21,30 @@ function extractDartStringLiteral(src) {
     for (let i = start + 1; i < src.length; i++) {
         const ch = src[i];
         const prev = src[i - 1];
-        if (ch === "{" && prev === "$") {
+        if (ch === "{" && prev === "$")
             braceDepth++;
-        }
-        else if (ch === "}" && braceDepth > 0) {
+        else if (ch === "}" && braceDepth > 0)
             braceDepth--;
-        }
-        else if (ch === quote && braceDepth === 0 && prev !== "\\") {
+        else if (ch === quote && braceDepth === 0 && prev !== "\\")
             return src.slice(start + 1, i);
-        }
     }
     return null;
 }
 function formatInterpolatedText(rawText) {
     const replaced = rawText.replace(/\$\{([^}]+)\}|\$([a-zA-Z0-9_]+)/g, (_full, braced, simple) => {
         const expr = (braced || simple || "").trim();
-        if (expr === "_counter" || expr === "counter") {
+        if (expr === "_counter" || expr === "counter")
             return `__ELMAS_COUNTER__`;
-        }
-        if (expr.includes("DateFormat") || expr.includes("monthLabel")) {
+        if (expr.includes("DateFormat") || expr.includes("monthLabel"))
             return "Novembre 2026";
-        }
-        if (expr.includes("totalPoidsNet") || expr.includes("totalBrut") || expr.includes("totalNet")) {
+        if (expr.includes("totalPoidsNet") || expr.includes("totalBrut") || expr.includes("totalNet"))
             return "1 240.0";
-        }
-        if (expr.includes("totalRevenu") ||
-            expr.includes("montantNetRecu") ||
-            expr.includes("gainNet") ||
-            expr.includes("benefice")) {
+        if (expr.includes("totalRevenu") || expr.includes("montantNetRecu") || expr.includes("gainNet") || expr.includes("benefice"))
             return "205 500";
-        }
-        if (expr.includes("totalPayeSaigneurs") || expr.includes("gainBrut")) {
+        if (expr.includes("totalPayeSaigneurs") || expr.includes("gainBrut"))
             return "186 000";
-        }
-        if (expr.includes("totalDepenses") || expr.includes("totalRetenues") || expr.includes("amount")) {
+        if (expr.includes("totalDepenses") || expr.includes("totalRetenues") || expr.includes("amount"))
             return "42 500";
-        }
         if (expr.includes(".id"))
             return "1";
         if (expr.includes(".name"))
@@ -115,12 +99,10 @@ function parseTextStyleCss(block, theme, onDarkBg) {
     const sizeMatch = block.match(/fontSize\s*:\s*([0-9.]+)/);
     if (sizeMatch)
         styles.push(`font-size: ${sizeMatch[1]}px`);
-    if (block.includes("FontWeight.bold") || block.includes("FontWeight.w700")) {
+    if (block.includes("FontWeight.bold") || block.includes("FontWeight.w700"))
         styles.push("font-weight: 700");
-    }
-    else if (block.includes("FontWeight.w600")) {
+    else if (block.includes("FontWeight.w600"))
         styles.push("font-weight: 600");
-    }
     const spacingMatch = block.match(/letterSpacing\s*:\s*(-?[0-9.]+)/);
     if (spacingMatch)
         styles.push(`letter-spacing: ${spacingMatch[1]}px`);
@@ -144,64 +126,42 @@ function compileActionGrid(source, theme) {
       <div class="fl-grid-card" onclick="window.__switchFlutterScreen('${targetScreen}')">
         <div class="fl-grid-icon" style="background:${color}1f; color:${color}">${iconGlyph}</div>
         <div class="fl-grid-label">${label}</div>
-      </div>
-    `);
+      </div>`);
     }
-    if (actions.length === 0)
-        return "";
-    return `<div class="fl-action-grid">${actions.join("")}</div>`;
+    return actions.length ? `<div class="fl-action-grid">${actions.join("")}</div>` : "";
 }
 function compileFormFields(cleanSource) {
     const fields = [];
     const seen = new Set();
-    const fieldRegex = /_field\s*\([^,]+,\s*(['"])([^'"]+)\1/g;
+    const addField = (rawLabel) => {
+        const label = escapeHtml(rawLabel);
+        if (seen.has(label))
+            return;
+        seen.add(label);
+        fields.push(`<div class="fl-input-group"><label class="fl-input-label">${label}</label><input class="fl-input" type="text" placeholder="${label}" /></div>`);
+    };
     let m;
-    while ((m = fieldRegex.exec(cleanSource)) !== null) {
-        const label = escapeHtml(m[2]);
-        if (seen.has(label))
-            continue;
-        seen.add(label);
-        fields.push(`
-      <div class="fl-input-group">
-        <label class="fl-input-label">${label}</label>
-        <input class="fl-input" type="text" placeholder="${label}" />
-      </div>
-    `);
-    }
+    const fieldRegex = /_field\s*\([^,]+,\s*(['"])([^'"]+)\1/g;
+    while ((m = fieldRegex.exec(cleanSource)) !== null)
+        addField(m[2]);
     const decRegex = /InputDecoration\s*\([\s\S]{0,160}?labelText\s*:\s*(['"])([^'"]+)\1/g;
-    while ((m = decRegex.exec(cleanSource)) !== null) {
-        const label = escapeHtml(m[2]);
-        if (seen.has(label))
-            continue;
-        seen.add(label);
-        fields.push(`
-      <div class="fl-input-group">
-        <label class="fl-input-label">${label}</label>
-        <input class="fl-input" type="text" placeholder="${label}" />
-      </div>
-    `);
-    }
-    if (fields.length === 0)
-        return "";
-    return `<div style="width:100%; display:flex; flex-direction:column; gap:10px; margin:8px 0;">${fields.join("")}</div>`;
+    while ((m = decRegex.exec(cleanSource)) !== null)
+        addField(m[2]);
+    return fields.length ? `<div style="width:100%; display:flex; flex-direction:column; gap:10px; margin:8px 0;">${fields.join("")}</div>` : "";
 }
 function compilePinKeypad(source) {
     if (!source.includes("_buildKeypad()") && !source.includes("_enteredPin"))
         return "";
     return `
     <div class="fl-pin-dots" id="fl-pin-dots">
-      <span class="fl-pin-dot" data-dot="0"></span>
-      <span class="fl-pin-dot" data-dot="1"></span>
-      <span class="fl-pin-dot" data-dot="2"></span>
-      <span class="fl-pin-dot" data-dot="3"></span>
+      <span class="fl-pin-dot"></span><span class="fl-pin-dot"></span><span class="fl-pin-dot"></span><span class="fl-pin-dot"></span>
     </div>
     <div class="fl-keypad">
       ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `<button class="fl-key" onclick="window.__pressPinDigit('${n}')">${n}</button>`).join("")}
       <div></div>
       <button class="fl-key" onclick="window.__pressPinDigit('0')">0</button>
       <button class="fl-key" onclick="window.__pressPinBackspace()">⌫</button>
-    </div>
-  `;
+    </div>`;
 }
 function compileScreenWidgets(screen, theme, hasDarkGradient) {
     const fullSource = screen.source;
@@ -224,13 +184,11 @@ function compileScreenWidgets(screen, theme, hasDarkGradient) {
             <span>Bénéfice Net</span><span style="color:#69f0ae">+205 500 F</span>
           </div>
         </div>
-      </div>
-    `);
+      </div>`);
     }
     const gridHtml = compileActionGrid(fullSource, theme);
     if (gridHtml) {
-        parts.push(`<div class="fl-text" style="font-size:16px; font-weight:700; width:100%; text-align:left; margin:4px 0;">Actions Rapides</div>`);
-        parts.push(gridHtml);
+        parts.push(`<div class="fl-text" style="font-size:16px; font-weight:700; width:100%; text-align:left; margin:4px 0;">Actions Rapides</div>`, gridHtml);
     }
     const formHtml = compileFormFields(cleanSource);
     if (formHtml)
@@ -239,9 +197,7 @@ function compileScreenWidgets(screen, theme, hasDarkGradient) {
     const buildSlice = buildIdx !== -1 ? cleanSource.slice(buildIdx) : cleanSource;
     const bodyIdx = buildSlice.indexOf("body:");
     const fabIdx = buildSlice.indexOf("floatingActionButton:");
-    const bodySection = bodyIdx !== -1
-        ? buildSlice.slice(bodyIdx + 5, fabIdx !== -1 ? fabIdx : undefined)
-        : buildSlice;
+    const bodySection = bodyIdx !== -1 ? buildSlice.slice(bodyIdx + 5, fabIdx !== -1 ? fabIdx : undefined) : buildSlice;
     const tokenRegex = /(?:const\s+|new\s+)?(Text|SizedBox|ElevatedButton|OutlinedButton)\s*(?:\.icon\s*)?\(/g;
     let match;
     while ((match = tokenRegex.exec(bodySection)) !== null) {
@@ -251,23 +207,14 @@ function compileScreenWidgets(screen, theme, hasDarkGradient) {
         if (widgetType === "Text" && !fullSource.includes("_buildFinancialSummary")) {
             const ternaryMatch = inner.match(/\?\s*(['"])([\s\S]*?)\1\s*:\s*(['"])([\s\S]*?)\3/);
             const rawStr = ternaryMatch ? ternaryMatch[4] : extractDartStringLiteral(inner);
-            if (rawStr &&
-                !rawStr.startsWith("Erreur") &&
-                !rawStr.startsWith("Chargement") &&
-                !rawStr.includes("_lockExpiry") &&
-                rawStr !== "MMMM yyyy" &&
-                rawStr !== "dd/MM/yyyy") {
-                const textVal = formatInterpolatedText(rawStr);
-                const styleCss = parseTextStyleCss(inner, theme, hasDarkGradient);
-                parts.push(`<div class="fl-text" style="${styleCss}">${textVal}</div>`);
+            if (rawStr && !rawStr.startsWith("Erreur") && !rawStr.startsWith("Chargement") && !rawStr.includes("_lockExpiry") && rawStr !== "MMMM yyyy" && rawStr !== "dd/MM/yyyy") {
+                parts.push(`<div class="fl-text" style="${parseTextStyleCss(inner, theme, hasDarkGradient)}">${formatInterpolatedText(rawStr)}</div>`);
             }
         }
         else if (widgetType === "SizedBox" && !fullSource.includes("_buildFinancialSummary")) {
             const hMatch = inner.match(/height\s*:\s*([0-9.]+)/);
-            if (hMatch) {
-                const h = Math.min(parseFloat(hMatch[1]), 16);
-                parts.push(`<div style="height: ${h}px; width: 100%; flex-shrink: 0;"></div>`);
-            }
+            if (hMatch)
+                parts.push(`<div style="height: ${Math.min(parseFloat(hMatch[1]), 16)}px; width: 100%; flex-shrink: 0;"></div>`);
         }
         else if (widgetType === "ElevatedButton" || widgetType === "OutlinedButton") {
             const labelMatch = inner.match(/Text\(\s*(?:[a-zA-Z0-9_]+\s*\?\s*['"][^'"]+['"]\s*:\s*)?(['"])([\s\S]*?)\1/);
@@ -290,22 +237,10 @@ function compileFlutterWorkspace(snapshot) {
     const { theme, screens, activeScreen } = snapshot;
     if (!activeScreen) {
         return {
-            scaffoldBg: theme.scaffoldBg,
-            scaffoldGradient: "",
-            isDark: theme.isDark,
-            showDebugBanner: theme.showDebugBanner,
-            hasAppBar: true,
-            appBarTitle: escapeHtml(theme.appTitle),
-            appBarSubtitle: "",
-            appBarBg: theme.primaryColor,
-            bodyHtml: `<div class="fl-text">Aucun écran Scaffold détecté</div>`,
-            bodyAlignCenter: true,
-            hasFab: false,
-            fabBg: theme.primaryColor,
-            fabLabel: "",
-            fabIcon: "+",
-            activeScreenId: "",
-            screens: [],
+            scaffoldBg: theme.scaffoldBg, scaffoldGradient: "", isDark: theme.isDark, showDebugBanner: theme.showDebugBanner,
+            hasAppBar: true, appBarTitle: escapeHtml(theme.appTitle), appBarSubtitle: "", appBarBg: theme.primaryColor,
+            bodyHtml: `<div class="fl-text">Aucun écran Scaffold détecté</div>`, bodyAlignCenter: true,
+            hasFab: false, fabBg: theme.primaryColor, fabLabel: "", fabIcon: "+", activeScreenId: "", screens: [],
         };
     }
     const src = activeScreen.source;
@@ -341,7 +276,7 @@ function compileFlutterWorkspace(snapshot) {
     let hasFab = false;
     let fabBg = theme.primaryColor;
     let fabLabel = "";
-    const fabIcon = "+";
+    let fabTargetScreen = "";
     const fabIdx = src.indexOf("FloatingActionButton");
     if (fabIdx !== -1) {
         hasFab = true;
@@ -352,28 +287,17 @@ function compileFlutterWorkspace(snapshot) {
             const lblMatch = fabInner.match(/label\s*:\s*(?:const\s+)?Text\(\s*(['"])([^'"]+)\1/);
             if (lblMatch)
                 fabLabel = escapeHtml(lblMatch[2]);
+            const navMatch = fabInner.match(/([A-Za-z0-9_]+Screen|[A-Za-z0-9_]+Dashboard)\s*\(/);
+            if (navMatch)
+                fabTargetScreen = navMatch[1];
         }
     }
-    const bodyAlignCenter = !hasSliverAppBar &&
-        !src.includes("ListView") &&
-        !src.includes("Form(") &&
-        (src.includes("MainAxisAlignment.center") || src.includes("Center("));
+    const bodyAlignCenter = !hasSliverAppBar && !src.includes("ListView") && !src.includes("Form(") && (src.includes("MainAxisAlignment.center") || src.includes("Center("));
     const bodyHtml = compileScreenWidgets(activeScreen, theme, Boolean(scaffoldGradient));
     return {
-        scaffoldBg: theme.scaffoldBg,
-        scaffoldGradient,
-        isDark: theme.isDark,
-        showDebugBanner: theme.showDebugBanner,
-        hasAppBar,
-        appBarTitle,
-        appBarSubtitle,
-        appBarBg,
-        bodyHtml,
-        bodyAlignCenter,
-        hasFab,
-        fabBg,
-        fabLabel,
-        fabIcon,
+        scaffoldBg: theme.scaffoldBg, scaffoldGradient, isDark: theme.isDark, showDebugBanner: theme.showDebugBanner,
+        hasAppBar, appBarTitle, appBarSubtitle, appBarBg, bodyHtml, bodyAlignCenter,
+        hasFab, fabBg, fabLabel, fabIcon: "+", fabTargetScreen,
         activeScreenId: activeScreen.id,
         screens: screens.map((s) => ({ id: s.id, label: s.shortLabel })),
     };

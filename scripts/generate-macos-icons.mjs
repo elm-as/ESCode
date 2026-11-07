@@ -187,6 +187,13 @@ export function generateMacosIconTheme(desktopDir) {
   const builtinExtDir = path.join(desktopDir, "resources/app/extensions/elmas-macos-icons");
   fs.cpSync(extDir, builtinExtDir, { recursive: true, force: true });
 
+  // Also replace built-in theme-seti icons so even cached vs-seti workspaces render macOS Sequoia 3D folder & file icons
+  const setiIconsDir = path.join(desktopDir, "resources/app/extensions/theme-seti/icons");
+  if (fs.existsSync(setiIconsDir)) {
+    fs.cpSync(iconsDir, path.join(setiIconsDir, "icons"), { recursive: true, force: true });
+    fs.writeFileSync(path.join(setiIconsDir, "vs-seti-icon-theme.json"), JSON.stringify(themeJson, null, 2), "utf8");
+  }
+
   // Register in data/extensions/extensions.json if present
   const extManifestPath = path.join(desktopDir, "data/extensions/extensions.json");
   if (fs.existsSync(extManifestPath)) {

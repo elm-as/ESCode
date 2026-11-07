@@ -137,8 +137,10 @@
   height: 100% !important;
   top: 0 !important;
 }
-.monaco-workbench .explorer-viewlet .explorer-folders-view {
-  height: 100% !important;
+
+/* Prevent sticky scroll container from overlapping folder rows in Explorer */
+.monaco-workbench .part.sidebar .monaco-tree-sticky-container {
+  display: none !important;
 }
 
 /* Clean macOS Finder Section Header inside Navigator */
@@ -191,6 +193,14 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
+/* Completely hide the horizontal scrollbar slider inside the tab bar that was drawing a gray bar above main.dart */
+.monaco-workbench .part.editor .tabs-and-actions-container > .monaco-scrollable-element > .scrollbar {
+  display: none !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 .monaco-workbench .part.editor .tabs-and-actions-container {
   background: transparent !important;
   height: 36px !important;
@@ -199,37 +209,76 @@
 
 .monaco-workbench .part.editor .tabs-container {
   height: 36px !important;
+  display: flex !important;
   align-items: center !important;
   padding: 0 4px !important;
 }
 
+/* Perfectly centered macOS Capsule Tab for both active and inactive editor groups */
 .monaco-workbench .part.editor .tabs-container > .tab {
-  border-radius: 7px !important;
-  margin: 4px 3px !important;
-  height: 27px !important;
-  line-height: 27px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  margin: 0 !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  line-height: 28px !important;
+  padding: 0 10px !important;
   border: 1px solid transparent !important;
   background: transparent !important;
   transition: all 0.14s cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 
-.monaco-workbench .part.editor .tabs-container > .tab:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.045) !important;
+/* Force all inner tab elements (icon, label, close button) to 26px height so text is 100% vertically centered */
+.monaco-workbench .part.editor .tabs-container > .tab .tab-label,
+.monaco-workbench .part.editor .tabs-container > .tab .monaco-icon-label,
+.monaco-workbench .part.editor .tabs-container > .tab .monaco-icon-label-container,
+.monaco-workbench .part.editor .tabs-container > .tab .label-name,
+.monaco-workbench .part.editor .tabs-container > .tab .tab-actions,
+.monaco-workbench .part.editor .tabs-container > .tab .monaco-action-bar {
+  height: 26px !important;
+  line-height: 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
-.monaco-workbench .part.editor .tabs-container > .tab.active {
+.monaco-workbench .part.editor .tabs-container > .tab .monaco-icon-label::before {
+  height: 26px !important;
+  line-height: 26px !important;
+  background-position: center center !important;
+}
+
+.monaco-workbench .part.editor .tabs-container > .tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Unified luminous capsule styling for BOTH main.dart (active group) and Aperçu Mobile (second group) */
+.monaco-workbench .part.editor .editor-group-container .tabs-container > .tab.active {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.055) 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
   box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 -1.5px 0 rgba(245, 158, 11, 0.75) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
   color: #fafafa !important;
 }
 
-/* Hide default top/bottom tab border lines */
+.monaco-workbench .part.editor .editor-group-container.active .tabs-container > .tab.active {
+  border-color: rgba(245, 158, 11, 0.38) !important;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(251, 191, 36, 0.2) !important;
+}
+
+/* Hide default top/bottom tab border lines & connected edges */
 .monaco-workbench .part.editor .tabs-container > .tab .tab-border-top-container,
-.monaco-workbench .part.editor .tabs-container > .tab .tab-border-bottom-container {
+.monaco-workbench .part.editor .tabs-container > .tab .tab-border-bottom-container,
+.monaco-workbench .part.editor .tabs-container > .tab .tab-fill::after {
   display: none !important;
 }
 
@@ -311,12 +360,12 @@
   font-weight: 500 !important;
 }
 
-/* 8. Ultra-thin macOS Overlay Scrollbars */
-.monaco-scrollable-element > .scrollbar > .slider {
+/* 8. Ultra-thin macOS Overlay Scrollbars (excluding editor tab bar) */
+.monaco-scrollable-element:not(.tabs-container) > .scrollbar > .slider {
   border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
 }
-.monaco-scrollable-element > .scrollbar > .slider:hover {
+.monaco-scrollable-element:not(.tabs-container) > .scrollbar > .slider:hover {
   background: rgba(245, 158, 11, 0.45) !important;
 }
 

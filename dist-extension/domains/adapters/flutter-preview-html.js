@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.renderFlutterPreviewDocument = renderFlutterPreviewDocument;
 /**
  * Generates the interactive HTML document for the Flutter Fast Preview server.
+ * Pure mobile viewport without artificial debug bars overlapping the phone bezel.
  */
 function renderFlutterPreviewDocument(payload) {
     const payloadJson = JSON.stringify(payload);
@@ -21,28 +22,28 @@ function renderFlutterPreviewDocument(payload) {
     #fl-scaffold {
       position: relative; width: 100%; height: 100vh;
       display: flex; flex-direction: column;
-      transition: background 0.1s ease;
-    }
-    #fl-debug {
-      position: absolute; top: 12px; right: -28px; width: 96px;
-      background: rgba(183, 28, 28, 0.88); color: #ffffff;
-      font-size: 8.5px; font-weight: 800; letter-spacing: 0.8px;
-      text-align: center; padding: 2px 0; transform: rotate(45deg);
-      z-index: 50; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      transition: background 0.12s ease;
     }
     #fl-appbar {
-      min-height: 56px; padding: 8px 16px;
-      display: flex; flex-direction: column; justify-content: center;
-      color: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.18); flex-shrink: 0; z-index: 10;
+      min-height: 54px; padding: 8px 16px;
+      display: flex; align-items: center; gap: 12px;
+      color: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.16); flex-shrink: 0; z-index: 10;
     }
-    #fl-appbar-title { font-size: 19px; font-weight: 700; line-height: 1.2; }
+    #fl-back-btn {
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,0.12); color: #ffffff;
+      display: none; align-items: center; justify-content: center;
+      font-size: 16px; cursor: pointer; flex-shrink: 0;
+    }
+    #fl-back-btn:active { background: rgba(255,255,255,0.24); transform: scale(0.94); }
+    #fl-appbar-titles { display: flex; flex-direction: column; justify-content: center; }
+    #fl-appbar-title { font-size: 18px; font-weight: 700; line-height: 1.2; }
     #fl-appbar-sub { font-size: 11px; color: rgba(255,255,255,0.75); margin-top: 2px; }
     #fl-body {
       flex: 1; display: flex; flex-direction: column;
-      padding: 18px 16px 68px 16px; overflow-y: auto; gap: 4px;
+      padding: 18px 16px 24px 16px; overflow-y: auto; gap: 4px;
     }
-    #fl-body::-webkit-scrollbar { width: 4px; }
-    #fl-body::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.3); border-radius: 4px; }
+    #fl-body::-webkit-scrollbar { width: 0; height: 0; }
     .fl-text { line-height: 1.35; }
     .fl-btn {
       border: none; color: #fff; padding: 13px 22px; border-radius: 14px;
@@ -102,42 +103,26 @@ function renderFlutterPreviewDocument(payload) {
     }
     .fl-key:active { background: rgba(255,255,255,0.25); transform: scale(0.93); }
     #fl-fab {
-      position: absolute; right: 14px; bottom: 48px;
+      position: absolute; right: 16px; bottom: 18px;
       height: 48px; min-width: 48px; padding: 0 16px; border-radius: 14px; border: none;
       display: flex; align-items: center; justify-content: center; gap: 6px;
       color: #ffffff; font-size: 13px; font-weight: 700; cursor: pointer;
       box-shadow: 0 4px 12px rgba(0,0,0,0.35); z-index: 20;
     }
     #fl-fab:active { transform: scale(0.94); }
-    #fl-screen-bar {
-      position: absolute; left: 0; right: 0; bottom: 0; height: 38px;
-      background: rgba(15, 15, 18, 0.92); backdrop-filter: blur(8px);
-      border-top: 1px solid rgba(255,255,255,0.1);
-      display: flex; align-items: center; gap: 5px; padding: 0 8px;
-      overflow-x: auto; z-index: 30;
-    }
-    #fl-screen-bar::-webkit-scrollbar { height: 0; }
-    .fl-screen-pill {
-      flex-shrink: 0; border: 1px solid rgba(255,255,255,0.14);
-      background: rgba(255,255,255,0.05); color: #d4d4d8;
-      font-size: 10.5px; font-weight: 600; padding: 4px 9px; border-radius: 999px;
-      cursor: pointer; white-space: nowrap;
-    }
-    .fl-screen-pill.active {
-      background: #f59e0b; color: #09090b; border-color: #f59e0b; font-weight: 700;
-    }
   </style>
 </head>
 <body>
   <div id="fl-scaffold">
-    <div id="fl-debug">DEBUG</div>
     <div id="fl-appbar">
-      <div id="fl-appbar-title"></div>
-      <div id="fl-appbar-sub"></div>
+      <button id="fl-back-btn" onclick="window.__switchFlutterScreen('HomeScreen')" title="Retour">←</button>
+      <div id="fl-appbar-titles">
+        <div id="fl-appbar-title"></div>
+        <div id="fl-appbar-sub"></div>
+      </div>
     </div>
     <div id="fl-body"></div>
     <button id="fl-fab" onclick="window.__incrementFlutterCounter()"></button>
-    <div id="fl-screen-bar"></div>
   </div>
 
   <script>
@@ -168,7 +153,7 @@ function renderFlutterPreviewDocument(payload) {
             window.__flutterState.pin = "";
             syncStateToDom();
             window.__switchFlutterScreen("HomeScreen");
-          }, 180);
+          }, 160);
         }
       }
     };
@@ -185,20 +170,16 @@ function renderFlutterPreviewDocument(payload) {
 
     function applyPatch(model) {
       const scaffold = document.getElementById('fl-scaffold');
-      const debugEl = document.getElementById('fl-debug');
       const appbar = document.getElementById('fl-appbar');
+      const backBtn = document.getElementById('fl-back-btn');
       const appbarTitle = document.getElementById('fl-appbar-title');
       const appbarSub = document.getElementById('fl-appbar-sub');
       const body = document.getElementById('fl-body');
       const fab = document.getElementById('fl-fab');
-      const screenBar = document.getElementById('fl-screen-bar');
 
       if (scaffold) {
         scaffold.style.background = model.scaffoldGradient || model.scaffoldBg;
         scaffold.style.color = (model.isDark || model.scaffoldGradient) ? '#ffffff' : '#1f2937';
-      }
-      if (debugEl) {
-        debugEl.style.display = model.showDebugBanner ? 'block' : 'none';
       }
       if (appbar && appbarTitle && appbarSub) {
         appbar.style.display = model.hasAppBar ? 'flex' : 'none';
@@ -206,6 +187,10 @@ function renderFlutterPreviewDocument(payload) {
         appbarTitle.innerHTML = model.appBarTitle;
         appbarSub.textContent = model.appBarSubtitle || '';
         appbarSub.style.display = model.appBarSubtitle ? 'block' : 'none';
+      }
+      if (backBtn) {
+        const isRoot = !model.activeScreenId || model.activeScreenId === 'LockScreen' || model.activeScreenId === 'HomeScreen';
+        backBtn.style.display = (!isRoot && model.screens && model.screens.length > 1) ? 'inline-flex' : 'none';
       }
       if (body) {
         body.style.justifyContent = model.bodyAlignCenter ? 'center' : 'flex-start';
@@ -216,20 +201,13 @@ function renderFlutterPreviewDocument(payload) {
       if (fab) {
         fab.style.display = model.hasFab ? 'flex' : 'none';
         fab.style.backgroundColor = model.fabBg;
-        fab.style.bottom = (model.screens && model.screens.length > 1) ? '48px' : '16px';
+        fab.onclick = function() {
+          if (model.fabTargetScreen) window.__switchFlutterScreen(model.fabTargetScreen);
+          else window.__incrementFlutterCounter();
+        };
         fab.innerHTML = model.fabLabel
           ? '<span>' + model.fabIcon + '</span><span>' + model.fabLabel + '</span>'
           : '<span style="font-size:24px;font-weight:400">' + model.fabIcon + '</span>';
-      }
-      if (screenBar) {
-        if (model.screens && model.screens.length > 1) {
-          screenBar.style.display = 'flex';
-          screenBar.innerHTML = model.screens.map((s) =>
-            '<button class="fl-screen-pill ' + (s.id === model.activeScreenId ? 'active' : '') + '" onclick="window.__switchFlutterScreen(\\'' + s.id + '\\')">' + s.label + '</button>'
-          ).join('');
-        } else {
-          screenBar.style.display = 'none';
-        }
       }
       syncStateToDom();
     }
