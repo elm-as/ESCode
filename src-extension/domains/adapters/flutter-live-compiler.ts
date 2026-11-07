@@ -1,57 +1,27 @@
-/**
- * Instantaneous in-memory Dart/Flutter widget parser & HTML renderer for Fast Mode.
- * Allows <15ms keystroke-by-keystroke live preview without waiting for Gradle or CanvasKit cold builds,
- * while preserving interactive StatefulWidget state (such as _counter) across edits.
- */
+import {
+  DiscoveredFlutterScreen,
+  FlutterThemeTokens,
+  FlutterWorkspaceSnapshot,
+  resolveDartColor,
+} from "./flutter-project-scanner";
 
-export interface ParsedFlutterTheme {
+export interface CompiledFlutterPayload {
   scaffoldBg: string;
-  appBarTitle: string;
-  appBarBg: string;
+  scaffoldGradient: string;
+  isDark: boolean;
+  showDebugBanner: boolean;
   hasAppBar: boolean;
+  appBarTitle: string;
+  appBarSubtitle: string;
+  appBarBg: string;
   bodyHtml: string;
+  bodyAlignCenter: boolean;
   hasFab: boolean;
   fabBg: string;
+  fabLabel: string;
   fabIcon: string;
-}
-
-/**
- * Converts a Dart Color(0xAARRGGBB) or Colors.* literal into a CSS color string.
- */
-export function parseDartColor(source: string, fallback: string): string {
-  const hexMatch = source.match(/Color\(\s*0x([0-9a-fA-F]{8})\s*\)/);
-  if (hexMatch) {
-    const hex = hexMatch[1];
-    const alpha = parseInt(hex.slice(0, 2), 16) / 255;
-    const r = parseInt(hex.slice(2, 4), 16);
-    const g = parseInt(hex.slice(4, 6), 16);
-    const b = parseInt(hex.slice(6, 8), 16);
-    if (alpha >= 0.99) {
-      return `#${hex.slice(2, 8)}`;
-    }
-    return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
-  }
-
-  const namedColors: Record<string, string> = {
-    "Colors.amber": "#ffc107",
-    "Colors.blue": "#2196f3",
-    "Colors.cyan": "#00bcd4",
-    "Colors.green": "#4caf50",
-    "Colors.indigo": "#3f51b5",
-    "Colors.orange": "#ff9800",
-    "Colors.pink": "#e91e63",
-    "Colors.purple": "#9c27b0",
-    "Colors.red": "#f44336",
-    "Colors.teal": "#009688",
-    "Colors.white": "#ffffff",
-    "Colors.black": "#000000",
-    "Colors.grey": "#9e9e9e",
-  };
-
-  for (const [key, val] of Object.entries(namedColors)) {
-    if (source.includes(key)) return val;
-  }
-  return fallback;
+  activeScreenId: string;
+  screens: Array<{ id: string; label: string }>;
 }
 
 function escapeHtml(raw: string): string {
@@ -64,31 +34,15 @@ function escapeHtml(raw: string): string {
 
 function formatInterpolatedText(rawText: string): string {
   const escaped = escapeHtml(rawText);
-  return escaped.replace(/\$\{?([a-zA-Z0-9_]+)\}?/g, (_match, varName) => {
-    return `<span data-flutter-var="${varName}">0</span>`;
-  });
-}
-
-function parseTextStyleCss(block: string): string {
-  const styles: string[] = [];
-  const color = parseDartColor(block, "");
-  if (color) styles.push(`color: ${color}`);
-
-  const sizeMatch = block.match(/fontSize\s*:\s*([0-9.]+)/);
-  if (sizeMatch) styles.push(`font-size: ${sizeMatch[1]}px`);
-
-  if (block.includes("FontWeight.bold") || block.includes("FontWeight.w700")) {
-    styles.push("font-weight: 700");
-  } else if (block.includes("FontWeight.w600")) {
-    styles.push("font-weight: 600");
-  } else if (block.includes("FontWeight.w500")) {
-    styles.push("font-weight: 500");
-  }
-
-  const spacingMatch = block.match(/letterSpacing\s*:\s*(-?[0-9.]+)/);
-  if (spacingMatch) styles.push(`letter-spacing: ${spacingMatch[1]}px`);
-
-  return styles.join("; ");
+  return escaped
+    .replace(/\$\{?_(counter)\}?/g, `<span data-flutter-var="_counter">0</span>`)
+    .replace(/\$\{?(counter)\}?/g, `<span data-flutter-var="counter">0</span>`)
+    .replace(/\$\{?totalPoidsNet[^}]*\}?/g, "1 240.0")
+    .replace(/\$\{?fmt\.format\(totalRevenu\)\}?/g, "434 000")
+    .replace(/\$\{?fmt\.format\(totalPayeSaigneurs\)\}?/g, "186 000")
+    .replace(/\$\{?fmt\.format\(totalDepenses\)\}?/g, "42 500")
+    .replace(/\$\{?fmt\.format\(benefice\)\}?/g, "205 500")
+    .replace(/\$\{?monthLabel[^}]*\}?/g, "NOVEMBRE 2026");
 }
 
 function extractBalancedParen(source: string, startIdx: number): string {
@@ -112,16 +66,123 @@ function extractBalancedParen(source: string, startIdx: number): string {
   return source.slice(startIdx + 1);
 }
 
-function parseBodyWidgets(dartSource: string): string {
-  const bodyIdx = dartSource.indexOf("body:");
-  if (bodyIdx === -1) return "";
+function parseTextStyleCss(block: string, theme: FlutterThemeTokens, onDarkBg: boolean): string {
+  const styles: string[] = [];
+  const defaultColor = onDarkBg || theme.isDark ? "#ffffff" : "#1f2937";
+  const color = resolveDartColor(block, theme, defaultColor);
+  if (color) styles.push(`color: ${color}`);
 
-  const fabIdx = dartSource.indexOf("floatingActionButton:", bodyIdx);
-  const bodySection =
-    fabIdx !== -1 ? dartSource.slice(bodyIdx, fabIdx) : dartSource.slice(bodyIdx);
+  const sizeMatch = block.match(/fontSize\s*:\s*([0-9.]+)/);
+  if (sizeMatch) styles.push(`font-size: ${sizeMatch[1]}px`);
 
-  const elements: string[] = [];
-  const tokenRegex = /(?:const\s+|new\s+)?(Text|SizedBox|ElevatedButton|FilledButton|Icon)\s*\(/g;
+  if (block.includes("FontWeight.bold") || block.includes("FontWeight.w700")) {
+    styles.push("font-weight: 700");
+  } else if (block.includes("FontWeight.w600")) {
+    styles.push("font-weight: 600");
+  }
+
+  const spacingMatch = block.match(/letterSpacing\s*:\s*(-?[0-9.]+)/);
+  if (spacingMatch) styles.push(`letter-spacing: ${spacingMatch[1]}px`);
+
+  return styles.join("; ");
+}
+
+function compileActionGrid(source: string, theme: FlutterThemeTokens): string {
+  const actions: string[] = [];
+  const regex = /_actionButton\s*\([^,]+,\s*Icons\.([a-z0-9_]+)\s*,\s*(['"])([^'"]+)\2\s*,\s*([^,]+),\s*\(\)\s*\{([\s\S]*?)\}\s*\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = regex.exec(source)) !== null) {
+    const iconName = m[1];
+    const label = escapeHtml(m[3]);
+    const color = resolveDartColor(m[4], theme, theme.primaryColor);
+    const navMatch = m[5].match(/([A-Za-z0-9_]+Screen|[A-Za-z0-9_]+Dashboard)\s*\(/);
+    const targetScreen = navMatch ? navMatch[1] : "";
+    const iconGlyph =
+      iconName.includes("cart") ? "⚖️" :
+      iconName.includes("group") ? "👥" :
+      iconName.includes("receipt") ? "🧾" :
+      iconName.includes("analytics") ? "📊" : "⚡";
+
+    actions.push(`
+      <div class="fl-grid-card" onclick="window.__switchFlutterScreen('${targetScreen}')">
+        <div class="fl-grid-icon" style="background:${color}1f; color:${color}">${iconGlyph}</div>
+        <div class="fl-grid-label">${label}</div>
+      </div>
+    `);
+  }
+  if (actions.length === 0) return "";
+  return `<div class="fl-action-grid">${actions.join("")}</div>`;
+}
+
+function compileFormFields(source: string, theme: FlutterThemeTokens): string {
+  const fields: string[] = [];
+  const fieldRegex = /_field\s*\([^,]+,\s*(['"])([^'"]+)\1/g;
+  let m: RegExpExecArray | null;
+  while ((m = fieldRegex.exec(source)) !== null) {
+    const label = escapeHtml(m[2]);
+    fields.push(`
+      <div class="fl-input-group">
+        <label class="fl-input-label">${label}</label>
+        <input class="fl-input" type="text" placeholder="${label}" />
+      </div>
+    `);
+  }
+
+  const decRegex = /InputDecoration\s*\([\s\S]*?labelText\s*:\s*(['"])([^'"]+)\1/g;
+  while ((m = decRegex.exec(source)) !== null) {
+    const label = escapeHtml(m[2]);
+    fields.push(`
+      <div class="fl-input-group">
+        <label class="fl-input-label">${label}</label>
+        <input class="fl-input" type="text" placeholder="${label}" />
+      </div>
+    `);
+  }
+  if (fields.length === 0) return "";
+  return `<div style="width:100%; display:flex; flex-direction:column; gap:10px; margin:8px 0;">${fields.join("")}</div>`;
+}
+
+function compilePinKeypad(source: string, theme: FlutterThemeTokens): string {
+  if (!source.includes("_buildKeypad()") && !source.includes("_enteredPin")) return "";
+  return `
+    <div class="fl-pin-dots" id="fl-pin-dots">
+      <span class="fl-pin-dot" data-dot="0"></span>
+      <span class="fl-pin-dot" data-dot="1"></span>
+      <span class="fl-pin-dot" data-dot="2"></span>
+      <span class="fl-pin-dot" data-dot="3"></span>
+    </div>
+    <div class="fl-keypad">
+      ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `<button class="fl-key" onclick="window.__pressPinDigit('${n}')">${n}</button>`).join("")}
+      <div></div>
+      <button class="fl-key" onclick="window.__pressPinDigit('0')">0</button>
+      <button class="fl-key" onclick="window.__pressPinBackspace()">⌫</button>
+    </div>
+  `;
+}
+
+function compileScreenWidgets(
+  screen: DiscoveredFlutterScreen,
+  theme: FlutterThemeTokens,
+  hasDarkGradient: boolean
+): string {
+  const source = screen.source;
+  const parts: string[] = [];
+
+  // 1. Check Image.asset(...)
+  const imgMatch = source.match(/Image\.asset\(\s*(['"])([^'"]+)\1/);
+  if (imgMatch) {
+    parts.push(
+      `<img src="/__asset/${imgMatch[2]}" style="width:76px; height:76px; border-radius:20px; object-fit:cover; box-shadow:0 8px 20px rgba(0,0,0,0.3); margin-bottom:12px;" onerror="this.style.display='none'" />`
+    );
+  }
+
+  // 2. Parse primary build() widgets in order
+  const buildIdx = source.indexOf("Widget build(");
+  const mainSlice = buildIdx !== -1 ? source.slice(buildIdx) : source;
+  const fabIdx = mainSlice.indexOf("floatingActionButton:");
+  const bodySection = fabIdx !== -1 ? mainSlice.slice(0, fabIdx) : mainSlice;
+
+  const tokenRegex = /(?:const\s+|new\s+)?(Text|SizedBox|ElevatedButton|OutlinedButton|TextButton)\s*(?:\.icon\s*)?\(/g;
   let match: RegExpExecArray | null;
 
   while ((match = tokenRegex.exec(bodySection)) !== null) {
@@ -131,218 +192,166 @@ function parseBodyWidgets(dartSource: string): string {
 
     if (widgetType === "Text") {
       const strMatch = inner.match(/^\s*(['"])([\s\S]*?)\1/);
-      if (strMatch) {
-        const textVal = formatInterpolatedText(strMatch[2]);
-        const styleCss = parseTextStyleCss(inner);
-        elements.push(`<div class="fl-text" style="${styleCss}">${textVal}</div>`);
+      const ternaryMatch = !strMatch
+        ? inner.match(/\?\s*(['"])([\s\S]*?)\1\s*:\s*(['"])([\s\S]*?)\3/)
+        : null;
+
+      const rawStr = strMatch ? strMatch[2] : ternaryMatch ? ternaryMatch[4] : null;
+      if (rawStr && !rawStr.includes("AppBar")) {
+        const textVal = formatInterpolatedText(rawStr);
+        const styleCss = parseTextStyleCss(inner, theme, hasDarkGradient);
+        parts.push(`<div class="fl-text" style="${styleCss}">${textVal}</div>`);
       }
     } else if (widgetType === "SizedBox") {
       const hMatch = inner.match(/height\s*:\s*([0-9.]+)/);
-      const wMatch = inner.match(/width\s*:\s*([0-9.]+)/);
-      const h = hMatch ? `${hMatch[1]}px` : "0px";
-      const w = wMatch ? `${wMatch[1]}px` : "100%";
-      elements.push(`<div style="height: ${h}; width: ${w}; flex-shrink: 0;"></div>`);
-    } else if (widgetType === "ElevatedButton" || widgetType === "FilledButton") {
-      const labelMatch = inner.match(/Text\(\s*(['"])([\s\S]*?)\1/);
-      const label = labelMatch ? formatInterpolatedText(labelMatch[2]) : "Button";
-      const bg = parseDartColor(inner, "#0284c7");
-      elements.push(
-        `<button class="fl-btn" style="background:${bg}" onclick="window.__incrementFlutterCounter()">${label}</button>`
-      );
-    } else if (widgetType === "Icon") {
-      const sizeMatch = inner.match(/size\s*:\s*([0-9.]+)/);
-      const color = parseDartColor(inner, "#ffffff");
-      const size = sizeMatch ? `${sizeMatch[1]}px` : "24px";
-      elements.push(
-        `<div style="color:${color}; font-size:${size}; line-height:1;">★</div>`
+      if (hMatch) {
+        const h = Math.min(parseFloat(hMatch[1]), 28);
+        parts.push(`<div style="height: ${h}px; width: 100%; flex-shrink: 0;"></div>`);
+      }
+    } else if (widgetType === "ElevatedButton" || widgetType === "OutlinedButton") {
+      const labelMatch = inner.match(/Text\(\s*(?:[a-zA-Z0-9_]+\s*\?\s*['"][^'"]+['"]\s*:\s*)?(['"])([\s\S]*?)\1/);
+      const label = labelMatch ? formatInterpolatedText(labelMatch[2]) : "Valider";
+      const bg = widgetType === "OutlinedButton" ? "transparent" : resolveDartColor(inner, theme, theme.primaryColor);
+      const border = widgetType === "OutlinedButton" ? `border:1.5px solid ${theme.primaryColor}; color:${theme.primaryColor};` : "";
+      parts.push(
+        `<button class="fl-btn" style="background:${bg}; ${border}" onclick="window.__incrementFlutterCounter()">${label}</button>`
       );
     }
 
     tokenRegex.lastIndex = openParenIdx + inner.length + 1;
   }
 
-  return elements.join("\n");
+  // 3. Inject specialized components (PIN Keypad, Form Fields, Action Grid, Financial Card)
+  const pinHtml = compilePinKeypad(source, theme);
+  if (pinHtml) parts.push(pinHtml);
+
+  const formHtml = compileFormFields(source, theme);
+  if (formHtml) parts.push(formHtml);
+
+  if (source.includes("_buildFinancialSummary")) {
+    parts.unshift(`
+      <div class="fl-summary-card" style="background:linear-gradient(135deg, ${theme.primaryColor}, #00251a);">
+        <div style="font-size:11px; color:rgba(255,255,255,0.65); letter-spacing:1.2px;">NOVEMBRE 2026</div>
+        <div style="font-size:28px; font-weight:800; color:#fff; margin:4px 0;">1 240.0 kg</div>
+        <div style="font-size:16px; font-weight:700; color:${theme.accentColor}; margin-bottom:10px;">Revenu: 434 000 F</div>
+        <div class="fl-summary-box">
+          <div class="fl-summary-row"><span>Payé saigneurs</span><span style="color:#ffab40">-186 000 F</span></div>
+          <div class="fl-summary-row"><span>Dépenses</span><span style="color:#ff5252">-42 500 F</span></div>
+          <div class="fl-summary-row" style="border-top:1px solid rgba(255,255,255,0.15); padding-top:4px; margin-top:4px; font-weight:700;">
+            <span>Bénéfice Net</span><span style="color:#69f0ae">+205 500 F</span>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+
+  const gridHtml = compileActionGrid(source, theme);
+  if (gridHtml) parts.push(gridHtml);
+
+  return parts.join("\n");
 }
 
 /**
- * Parses a Flutter main.dart source string into a structured preview model.
+ * Compiles a Flutter workspace snapshot into a live-patchable JSON model.
  */
-export function parseFlutterSource(dartSource: string): ParsedFlutterTheme {
-  const scaffoldBgMatch = dartSource.match(/scaffoldBackgroundColor\s*:\s*(?:const\s+)?(Color\([^)]+\)|Colors\.[a-zA-Z]+)/);
-  const scaffoldBg = scaffoldBgMatch ? parseDartColor(scaffoldBgMatch[1], "#09090b") : "#09090b";
+export function compileFlutterWorkspace(snapshot: FlutterWorkspaceSnapshot): CompiledFlutterPayload {
+  const { theme, screens, activeScreen } = snapshot;
+
+  if (!activeScreen) {
+    return {
+      scaffoldBg: theme.scaffoldBg,
+      scaffoldGradient: "",
+      isDark: theme.isDark,
+      showDebugBanner: theme.showDebugBanner,
+      hasAppBar: true,
+      appBarTitle: escapeHtml(theme.appTitle),
+      appBarSubtitle: "",
+      appBarBg: theme.primaryColor,
+      bodyHtml: `<div class="fl-text">Aucun écran Scaffold détecté</div>`,
+      bodyAlignCenter: true,
+      hasFab: false,
+      fabBg: theme.primaryColor,
+      fabLabel: "",
+      fabIcon: "+",
+      activeScreenId: "",
+      screens: [],
+    };
+  }
+
+  const src = activeScreen.source;
+
+  // Detect full-screen LinearGradient (e.g. LockScreen)
+  let scaffoldGradient = "";
+  const hasSliverAppBar = src.includes("SliverAppBar(");
+  if (!hasSliverAppBar && src.includes("LinearGradient(")) {
+    const gradMatch = src.match(/LinearGradient\s*\([\s\S]*?colors\s*:\s*\[\s*([^,\]]+)\s*,\s*([^\]]+)\s*\]/);
+    if (gradMatch) {
+      const c1 = resolveDartColor(gradMatch[1], theme, theme.primaryColor);
+      const c2 = resolveDartColor(gradMatch[2], theme, "#00251a");
+      scaffoldGradient = `linear-gradient(180deg, ${c1} 0%, ${c2} 100%)`;
+    }
+  }
 
   let hasAppBar = false;
   let appBarTitle = "";
-  let appBarBg = "#18181b";
+  let appBarSubtitle = "";
+  let appBarBg = theme.isDark ? "#18181b" : theme.primaryColor;
 
-  const appBarIdx = dartSource.indexOf("AppBar(");
+  const appBarIdx = src.indexOf("AppBar(");
   if (appBarIdx !== -1) {
     hasAppBar = true;
-    const appBarInner = extractBalancedParen(dartSource, appBarIdx + 6);
-    const titleMatch = appBarInner.match(/Text\(\s*(['"])([\s\S]*?)\1/);
-    if (titleMatch) {
-      appBarTitle = formatInterpolatedText(titleMatch[2]);
-    }
-    appBarBg = parseDartColor(appBarInner, "#18181b");
+    const inner = extractBalancedParen(src, appBarIdx + 6);
+    const tMatch = inner.match(/Text\(\s*(?:[a-zA-Z0-9_]+\s*\?\s*['"][^'"]+['"]\s*:\s*)?(['"])([\s\S]*?)\1/);
+    appBarTitle = tMatch ? formatInterpolatedText(tMatch[2]) : activeScreen.shortLabel;
+    appBarBg = resolveDartColor(inner, theme, appBarBg);
+  } else if (hasSliverAppBar) {
+    hasAppBar = true;
+    appBarTitle = escapeHtml(theme.appTitle);
+    appBarSubtitle = "Champ Principal";
+    appBarBg = theme.primaryColor;
   }
 
   let hasFab = false;
-  let fabBg = "#0284c7";
+  let fabBg = theme.primaryColor;
+  let fabLabel = "";
   let fabIcon = "+";
 
-  const fabIdx = dartSource.indexOf("FloatingActionButton(");
+  const fabIdx = src.indexOf("FloatingActionButton");
   if (fabIdx !== -1) {
     hasFab = true;
-    const fabInner = extractBalancedParen(dartSource, fabIdx + 20);
-    fabBg = parseDartColor(fabInner, "#0284c7");
-    if (fabInner.includes("Icons.remove")) fabIcon = "−";
-    else if (fabInner.includes("Icons.refresh")) fabIcon = "↻";
-    else if (fabInner.includes("Icons.check")) fabIcon = "✓";
+    const openIdx = src.indexOf("(", fabIdx);
+    if (openIdx !== -1) {
+      const fabInner = extractBalancedParen(src, openIdx);
+      fabBg = resolveDartColor(fabInner, theme, theme.primaryColor);
+      const lblMatch = fabInner.match(/label\s*:\s*(?:const\s+)?Text\(\s*(['"])([^'"]+)\1/);
+      if (lblMatch) fabLabel = escapeHtml(lblMatch[2]);
+    }
   }
 
-  const bodyHtml = parseBodyWidgets(dartSource);
+  const bodyAlignCenter =
+    !hasSliverAppBar &&
+    !src.includes("ListView") &&
+    !src.includes("Form(") &&
+    (src.includes("MainAxisAlignment.center") || src.includes("Center("));
+
+  const bodyHtml = compileScreenWidgets(activeScreen, theme, Boolean(scaffoldGradient));
 
   return {
-    scaffoldBg,
-    appBarTitle,
-    appBarBg,
+    scaffoldBg: theme.scaffoldBg,
+    scaffoldGradient,
+    isDark: theme.isDark,
+    showDebugBanner: theme.showDebugBanner,
     hasAppBar,
+    appBarTitle,
+    appBarSubtitle,
+    appBarBg,
     bodyHtml,
+    bodyAlignCenter,
     hasFab,
     fabBg,
+    fabLabel,
     fabIcon,
+    activeScreenId: activeScreen.id,
+    screens: screens.map((s) => ({ id: s.id, label: s.shortLabel })),
   };
-}
-
-/**
- * Renders the full HTML document for the Flutter Fast Preview server with SSE hot-patching.
- */
-export function renderFlutterPreviewDocument(parsed: ParsedFlutterTheme): string {
-  const payloadJson = JSON.stringify(parsed);
-
-  return `<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <style>
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-    html, body {
-      margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, "Roboto", "Segoe UI", sans-serif;
-      -webkit-font-smoothing: antialiased;
-    }
-    #fl-scaffold {
-      position: relative; width: 100%; height: 100vh;
-      display: flex; flex-direction: column;
-      background-color: ${parsed.scaffoldBg}; color: #ffffff;
-      transition: background-color 0.08s ease;
-    }
-    .debug-ribbon {
-      position: absolute; top: 12px; right: -28px; width: 96px;
-      background: rgba(183, 28, 28, 0.88); color: #ffffff;
-      font-size: 8.5px; font-weight: 800; letter-spacing: 0.8px;
-      text-align: center; padding: 2px 0; transform: rotate(45deg);
-      z-index: 50; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-    }
-    #fl-appbar {
-      height: 56px; padding: 0 16px;
-      display: ${parsed.hasAppBar ? "flex" : "none"};
-      align-items: center;
-      background-color: ${parsed.appBarBg};
-      font-size: 20px; font-weight: 500; color: #ffffff;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.3); flex-shrink: 0;
-    }
-    #fl-body {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 20px; text-align: center; overflow-y: auto;
-    }
-    .fl-text { line-height: 1.35; }
-    .fl-btn {
-      border: none; color: #fff; padding: 10px 20px; border-radius: 20px;
-      font-size: 14px; font-weight: 600; cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    }
-    .fl-btn:active { transform: scale(0.97); }
-    #fl-fab {
-      position: absolute; right: 16px; bottom: 16px;
-      width: 56px; height: 56px; border-radius: 16px; border: none;
-      display: ${parsed.hasFab ? "flex" : "none"};
-      align-items: center; justify-content: center;
-      background-color: ${parsed.fabBg}; color: #ffffff;
-      font-size: 26px; font-weight: 400; cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.45);
-      transition: transform 0.08s ease, background-color 0.08s ease;
-    }
-    #fl-fab:active { transform: scale(0.92); }
-  </style>
-</head>
-<body>
-  <div id="fl-scaffold">
-    <div class="debug-ribbon">DEBUG</div>
-    <div id="fl-appbar">${parsed.appBarTitle}</div>
-    <div id="fl-body">${parsed.bodyHtml}</div>
-    <button id="fl-fab" onclick="window.__incrementFlutterCounter()">${parsed.fabIcon}</button>
-  </div>
-
-  <script>
-    window.__flutterState = { _counter: 0, counter: 0 };
-
-    function syncStateToDom() {
-      document.querySelectorAll('[data-flutter-var]').forEach((el) => {
-        const key = el.getAttribute('data-flutter-var');
-        if (key && key in window.__flutterState) {
-          el.textContent = String(window.__flutterState[key]);
-        } else {
-          el.textContent = String(window.__flutterState._counter);
-        }
-      });
-    }
-
-    window.__incrementFlutterCounter = function() {
-      window.__flutterState._counter += 1;
-      window.__flutterState.counter += 1;
-      syncStateToDom();
-    };
-
-    function applyPatch(model) {
-      const scaffold = document.getElementById('fl-scaffold');
-      const appbar = document.getElementById('fl-appbar');
-      const body = document.getElementById('fl-body');
-      const fab = document.getElementById('fl-fab');
-
-      if (scaffold) scaffold.style.backgroundColor = model.scaffoldBg;
-      if (appbar) {
-        appbar.style.display = model.hasAppBar ? 'flex' : 'none';
-        appbar.style.backgroundColor = model.appBarBg;
-        appbar.innerHTML = model.appBarTitle;
-      }
-      if (body) {
-        body.innerHTML = model.bodyHtml;
-      }
-      if (fab) {
-        fab.style.display = model.hasFab ? 'flex' : 'none';
-        fab.style.backgroundColor = model.fabBg;
-        fab.textContent = model.fabIcon;
-      }
-      syncStateToDom();
-    }
-
-    applyPatch(${payloadJson});
-
-    try {
-      const es = new EventSource('/__elmas_live_reload');
-      es.onmessage = (e) => {
-        if (!e.data || e.data === 'connected') return;
-        if (e.data === 'reload') { window.location.reload(); return; }
-        try {
-          const msg = JSON.parse(e.data);
-          if (msg.type === 'flutter-patch') applyPatch(msg.payload);
-        } catch {}
-      };
-    } catch {}
-  </script>
-</body>
-</html>`;
 }

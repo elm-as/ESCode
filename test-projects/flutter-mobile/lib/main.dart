@@ -33,7 +33,7 @@ class _MobileHomePageState extends State<MobileHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Flutter Live'),
+        title: const Text('Flutter Live Preview'),
         backgroundColor: const Color(0xFF18181B),
       ),
       body: Center(
@@ -41,7 +41,7 @@ class _MobileHomePageState extends State<MobileHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text(
-              'FAST MODE',
+              'FAST MODE DEV',
               style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),

@@ -34,15 +34,21 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KotlinComposeAdapter = void 0;
+const http = __importStar(require("http"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const process_manager_1 = require("../process/process-manager");
 const sdk_detector_1 = require("../sdk/sdk-detector");
+const kotlin_live_compiler_1 = require("./kotlin-live-compiler");
 class KotlinComposeAdapter {
     name = "Kotlin / Jetpack Compose";
     framework = "kotlin_compose";
     currentStatus = { state: "idle", mode: "fast" };
     activeProcessId = null;
+    fastServer = null;
+    sseClients = [];
+    projectPath = "";
+    memoryKtBuffer = null;
     async detectProject(projectPath) {
         const gradleKts = path.join(projectPath, "build.gradle.kts");
         const gradle = path.join(projectPath, "build.gradle");
@@ -59,22 +65,23 @@ class KotlinComposeAdapter {
         return false;
     }
     async validateEnvironment(mode) {
+        if (mode === "fast") {
+            return { valid: true };
+        }
         const toolchain = await sdk_detector_1.sdkDetector.scanToolchain();
         const hasJava = toolchain.tools.some((t) => t.name.includes("Java") && t.installed);
         if (!hasJava) {
             return {
                 valid: false,
-                reason: "Java JDK is required for Kotlin and Jetpack Compose Gradle builds.",
+                reason: "Java JDK est requis pour les builds Gradle Kotlin / Jetpack Compose.",
             };
         }
-        if (mode === "native") {
-            const hasAdb = toolchain.tools.some((t) => t.name.includes("ADB") && t.installed);
-            if (!hasAdb) {
-                return {
-                    valid: false,
-                    reason: "Android ADB is required for Jetpack Compose native target.",
-                };
-            }
+        const hasAdb = toolchain.tools.some((t) => t.name.includes("ADB") && t.installed);
+        if (!hasAdb) {
+            return {
+                valid: false,
+                reason: "Android ADB est requis pour le mode natif Jetpack Compose.",
+            };
         }
         return { valid: true };
     }
@@ -83,40 +90,116 @@ class KotlinComposeAdapter {
     }
     async start(options) {
         this.currentStatus = { state: "starting", mode: options.mode, port: options.port };
+        this.projectPath = options.projectPath;
+        this.memoryKtBuffer = null;
+        await this.stop();
+        if (options.mode === "fast") {
+            return new Promise((resolve, reject) => {
+                const server = http.createServer((req, res) => {
+                    this.handleFastHttpRequest(req, res);
+                });
+                server.on("error", (err) => {
+                    this.currentStatus = { state: "error", mode: options.mode, error: err.message };
+                    reject(err);
+                });
+                server.listen(options.port, "127.0.0.1", () => {
+                    this.fastServer = server;
+                    this.currentStatus = { state: "running", mode: options.mode, port: options.port };
+                    resolve({
+                        previewUrl: `http://127.0.0.1:${options.port}`,
+                        port: options.port,
+                        processId: `kotlin_fast_${options.port}`,
+                    });
+                });
+            });
+        }
         const processId = `kotlin_compose_${Date.now()}`;
         this.activeProcessId = processId;
-        const command = "gradle";
-        const args = options.mode === "fast" ? ["run"] : ["assembleDebug"];
-        try {
-            process_manager_1.processManager.startProcess({
-                id: processId,
-                command,
-                args,
-                cwd: options.projectPath,
-            });
-            const previewUrl = `http://127.0.0.1:${options.port}`;
-            this.currentStatus = { state: "running", mode: options.mode, port: options.port };
-            return {
-                previewUrl,
-                port: options.port,
-                processId,
-            };
+        process_manager_1.processManager.startProcess({
+            id: processId,
+            command: "gradle",
+            args: ["assembleDebug"],
+            cwd: options.projectPath,
+        });
+        const previewUrl = `http://127.0.0.1:${options.port}`;
+        this.currentStatus = { state: "running", mode: options.mode, port: options.port };
+        return { previewUrl, port: options.port, processId };
+    }
+    readCurrentKotlinSource() {
+        if (this.memoryKtBuffer !== null) {
+            return this.memoryKtBuffer;
         }
-        catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            this.currentStatus = { state: "error", mode: options.mode, error: msg };
-            throw new Error(`Failed to start Kotlin Compose tooling: ${msg}`);
+        const mainKt = path.join(this.projectPath, "src", "main", "kotlin", "Main.kt");
+        if (fs.existsSync(mainKt)) {
+            try {
+                return fs.readFileSync(mainKt, "utf-8");
+            }
+            catch {
+                return "";
+            }
+        }
+        return "";
+    }
+    handleFastHttpRequest(req, res) {
+        if (req.url === "/__elmas_live_reload") {
+            res.writeHead(200, {
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                Connection: "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+            });
+            res.write("data: connected\n\n");
+            this.sseClients.push(res);
+            req.on("close", () => {
+                this.sseClients = this.sseClients.filter((c) => c !== res);
+            });
+            return;
+        }
+        const parsed = (0, kotlin_live_compiler_1.parseKotlinComposeSource)(this.readCurrentKotlinSource());
+        const html = (0, kotlin_live_compiler_1.renderKotlinComposeDocument)(parsed);
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+        res.end(html);
+    }
+    async onDocumentEdited(filePath, content) {
+        if (!filePath.toLowerCase().endsWith(".kt"))
+            return;
+        this.memoryKtBuffer = content;
+        this.broadcastPatch(content);
+    }
+    async reload() {
+        this.broadcastPatch(this.readCurrentKotlinSource());
+    }
+    broadcastPatch(ktSource) {
+        if (this.sseClients.length === 0)
+            return;
+        const parsed = (0, kotlin_live_compiler_1.parseKotlinComposeSource)(ktSource);
+        const msg = JSON.stringify({ type: "compose-patch", payload: parsed });
+        for (const client of this.sseClients) {
+            try {
+                client.write(`data: ${msg}\n\n`);
+            }
+            catch { }
         }
     }
     async stop() {
+        if (this.fastServer) {
+            for (const client of this.sseClients) {
+                try {
+                    client.end();
+                }
+                catch { }
+            }
+            this.sseClients = [];
+            await new Promise((resolve) => {
+                this.fastServer?.close(() => resolve());
+                this.fastServer = null;
+            });
+        }
         if (this.activeProcessId) {
             process_manager_1.processManager.stopProcess(this.activeProcessId);
             this.activeProcessId = null;
         }
         this.currentStatus = { state: "stopped", mode: "fast" };
-    }
-    async reload() {
-        // Gradle build daemon incremental reload
     }
     getStatus() {
         return this.currentStatus;
@@ -125,7 +208,7 @@ class KotlinComposeAdapter {
         return {
             supportsFastPreview: true,
             supportsNativePreview: true,
-            supportsHmr: false,
+            supportsHmr: true,
             supportsHotRestart: true,
             supportsElementInspection: false,
             targetPlatform: "Compose Multiplatform / Android ART",

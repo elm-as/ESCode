@@ -94,7 +94,20 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
 
-  // 5. Auto-reload preview on file save
+  // 5. Switch active preview screen when user clicks a screen file in Explorer
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      if (!editor || editor.document.uri.scheme !== "file") {
+        return;
+      }
+      adapterManager.notifyDocumentEdited(
+        editor.document.uri.fsPath,
+        editor.document.getText()
+      );
+    })
+  );
+
+  // 6. Auto-reload preview on file save
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(async (doc) => {
       if (doc.uri.scheme !== "file") return;

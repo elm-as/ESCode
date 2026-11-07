@@ -39,7 +39,9 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const process_manager_1 = require("../process/process-manager");
 const sdk_detector_1 = require("../sdk/sdk-detector");
+const flutter_project_scanner_1 = require("./flutter-project-scanner");
 const flutter_live_compiler_1 = require("./flutter-live-compiler");
+const flutter_preview_html_1 = require("./flutter-preview-html");
 class FlutterAdapter {
     name = "Flutter";
     framework = "flutter";
@@ -50,7 +52,8 @@ class FlutterAdapter {
     fastServer = null;
     sseClients = [];
     projectPath = "";
-    memoryDartBuffer = null;
+    memoryBuffers = new Map();
+    preferredScreen = null;
     async detectProject(projectPath) {
         const pubspec = path.join(projectPath, "pubspec.yaml");
         return fs.existsSync(pubspec);
@@ -82,7 +85,8 @@ class FlutterAdapter {
     async start(options) {
         this.currentStatus = { state: "starting", mode: options.mode, port: options.port };
         this.projectPath = options.projectPath;
-        this.memoryDartBuffer = null;
+        this.memoryBuffers.clear();
+        this.preferredScreen = null;
         await this.stop();
         if (options.mode === "fast") {
             return this.startFastLiveServer(options);
@@ -144,21 +148,6 @@ class FlutterAdapter {
             // Non-JSON stdout line
         }
     }
-    readCurrentDartSource() {
-        if (this.memoryDartBuffer !== null) {
-            return this.memoryDartBuffer;
-        }
-        const mainDartPath = path.join(this.projectPath, "lib", "main.dart");
-        if (fs.existsSync(mainDartPath)) {
-            try {
-                return fs.readFileSync(mainDartPath, "utf-8");
-            }
-            catch {
-                return "";
-            }
-        }
-        return "";
-    }
     handleFastHttpRequest(req, res) {
         const rawUrl = req.url || "/";
         if (rawUrl === "/__elmas_live_reload") {
@@ -175,9 +164,36 @@ class FlutterAdapter {
             });
             return;
         }
-        const source = this.readCurrentDartSource();
-        const parsed = (0, flutter_live_compiler_1.parseFlutterSource)(source);
-        const html = (0, flutter_live_compiler_1.renderFlutterPreviewDocument)(parsed);
+        if (rawUrl.startsWith("/__switch_screen")) {
+            const urlObj = new URL(rawUrl, "http://127.0.0.1");
+            const id = urlObj.searchParams.get("id");
+            if (id) {
+                this.preferredScreen = id;
+                this.broadcastLivePatch();
+            }
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: true }));
+            return;
+        }
+        if (rawUrl.startsWith("/__asset/")) {
+            const relAsset = decodeURIComponent(rawUrl.slice("/__asset/".length).split("?")[0]);
+            const fullAsset = path.join(this.projectPath, relAsset);
+            if (fullAsset.startsWith(this.projectPath) && fs.existsSync(fullAsset)) {
+                const ext = path.extname(fullAsset).toLowerCase();
+                const mime = ext === ".png" ? "image/png" :
+                    ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" :
+                        ext === ".svg" ? "image/svg+xml" : "application/octet-stream";
+                res.writeHead(200, { "Content-Type": mime });
+                fs.createReadStream(fullAsset).pipe(res);
+                return;
+            }
+            res.writeHead(404);
+            res.end();
+            return;
+        }
+        const snapshot = (0, flutter_project_scanner_1.scanFlutterWorkspace)(this.projectPath, this.memoryBuffers, this.preferredScreen);
+        const compiled = (0, flutter_live_compiler_1.compileFlutterWorkspace)(snapshot);
+        const html = (0, flutter_preview_html_1.renderFlutterPreviewDocument)(compiled);
         res.writeHead(200, {
             "Content-Type": "text/html; charset=utf-8",
             "Cache-Control": "no-store",
@@ -188,12 +204,15 @@ class FlutterAdapter {
         if (!filePath.toLowerCase().endsWith(".dart")) {
             return;
         }
-        this.memoryDartBuffer = content;
-        this.broadcastLivePatch(content);
+        const normPath = path.resolve(filePath).toLowerCase();
+        this.memoryBuffers.set(normPath, content);
+        if (content.includes("Scaffold(") || content.includes("SliverAppBar(")) {
+            this.preferredScreen = normPath;
+        }
+        this.broadcastLivePatch();
     }
     async reload() {
-        const source = this.readCurrentDartSource();
-        this.broadcastLivePatch(source);
+        this.broadcastLivePatch();
         if (this.activeProcessId) {
             if (this.activeAppId) {
                 const rpc = JSON.stringify([
@@ -210,11 +229,12 @@ class FlutterAdapter {
             }
         }
     }
-    broadcastLivePatch(dartSource) {
+    broadcastLivePatch() {
         if (this.sseClients.length === 0)
             return;
-        const parsed = (0, flutter_live_compiler_1.parseFlutterSource)(dartSource);
-        const message = JSON.stringify({ type: "flutter-patch", payload: parsed });
+        const snapshot = (0, flutter_project_scanner_1.scanFlutterWorkspace)(this.projectPath, this.memoryBuffers, this.preferredScreen);
+        const compiled = (0, flutter_live_compiler_1.compileFlutterWorkspace)(snapshot);
+        const message = JSON.stringify({ type: "flutter-patch", payload: compiled });
         for (const client of this.sseClients) {
             try {
                 client.write(`data: ${message}\n\n`);
@@ -255,7 +275,7 @@ class FlutterAdapter {
             supportsHmr: true,
             supportsHotRestart: true,
             supportsElementInspection: true,
-            targetPlatform: "Flutter Engine (Live Hot-Swap / Android ART)",
+            targetPlatform: "Flutter Engine (Live Multi-Screen Hot-Swap / Android ART)",
         };
     }
 }

@@ -11,10 +11,9 @@ import {
 } from "./types";
 import { processManager } from "../process/process-manager";
 import { sdkDetector } from "../sdk/sdk-detector";
-import {
-  parseFlutterSource,
-  renderFlutterPreviewDocument,
-} from "./flutter-live-compiler";
+import { scanFlutterWorkspace } from "./flutter-project-scanner";
+import { compileFlutterWorkspace } from "./flutter-live-compiler";
+import { renderFlutterPreviewDocument } from "./flutter-preview-html";
 
 export class FlutterAdapter implements IFrameworkAdapter {
   readonly name = "Flutter";
@@ -27,7 +26,8 @@ export class FlutterAdapter implements IFrameworkAdapter {
   private fastServer: http.Server | null = null;
   private sseClients: http.ServerResponse[] = [];
   private projectPath: string = "";
-  private memoryDartBuffer: string | null = null;
+  private memoryBuffers: Map<string, string> = new Map();
+  private preferredScreen: string | null = null;
 
   async detectProject(projectPath: string): Promise<boolean> {
     const pubspec = path.join(projectPath, "pubspec.yaml");
@@ -65,7 +65,8 @@ export class FlutterAdapter implements IFrameworkAdapter {
   async start(options: AdapterStartOptions): Promise<AdapterRunResult> {
     this.currentStatus = { state: "starting", mode: options.mode, port: options.port };
     this.projectPath = options.projectPath;
-    this.memoryDartBuffer = null;
+    this.memoryBuffers.clear();
+    this.preferredScreen = null;
 
     await this.stop();
 
@@ -138,21 +139,6 @@ export class FlutterAdapter implements IFrameworkAdapter {
     }
   }
 
-  private readCurrentDartSource(): string {
-    if (this.memoryDartBuffer !== null) {
-      return this.memoryDartBuffer;
-    }
-    const mainDartPath = path.join(this.projectPath, "lib", "main.dart");
-    if (fs.existsSync(mainDartPath)) {
-      try {
-        return fs.readFileSync(mainDartPath, "utf-8");
-      } catch {
-        return "";
-      }
-    }
-    return "";
-  }
-
   private handleFastHttpRequest(
     req: http.IncomingMessage,
     res: http.ServerResponse
@@ -174,9 +160,39 @@ export class FlutterAdapter implements IFrameworkAdapter {
       return;
     }
 
-    const source = this.readCurrentDartSource();
-    const parsed = parseFlutterSource(source);
-    const html = renderFlutterPreviewDocument(parsed);
+    if (rawUrl.startsWith("/__switch_screen")) {
+      const urlObj = new URL(rawUrl, "http://127.0.0.1");
+      const id = urlObj.searchParams.get("id");
+      if (id) {
+        this.preferredScreen = id;
+        this.broadcastLivePatch();
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    if (rawUrl.startsWith("/__asset/")) {
+      const relAsset = decodeURIComponent(rawUrl.slice("/__asset/".length).split("?")[0]);
+      const fullAsset = path.join(this.projectPath, relAsset);
+      if (fullAsset.startsWith(this.projectPath) && fs.existsSync(fullAsset)) {
+        const ext = path.extname(fullAsset).toLowerCase();
+        const mime =
+          ext === ".png" ? "image/png" :
+          ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" :
+          ext === ".svg" ? "image/svg+xml" : "application/octet-stream";
+        res.writeHead(200, { "Content-Type": mime });
+        fs.createReadStream(fullAsset).pipe(res);
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+      return;
+    }
+
+    const snapshot = scanFlutterWorkspace(this.projectPath, this.memoryBuffers, this.preferredScreen);
+    const compiled = compileFlutterWorkspace(snapshot);
+    const html = renderFlutterPreviewDocument(compiled);
 
     res.writeHead(200, {
       "Content-Type": "text/html; charset=utf-8",
@@ -189,13 +205,17 @@ export class FlutterAdapter implements IFrameworkAdapter {
     if (!filePath.toLowerCase().endsWith(".dart")) {
       return;
     }
-    this.memoryDartBuffer = content;
-    this.broadcastLivePatch(content);
+    const normPath = path.resolve(filePath).toLowerCase();
+    this.memoryBuffers.set(normPath, content);
+
+    if (content.includes("Scaffold(") || content.includes("SliverAppBar(")) {
+      this.preferredScreen = normPath;
+    }
+    this.broadcastLivePatch();
   }
 
   async reload(): Promise<void> {
-    const source = this.readCurrentDartSource();
-    this.broadcastLivePatch(source);
+    this.broadcastLivePatch();
 
     if (this.activeProcessId) {
       if (this.activeAppId) {
@@ -213,11 +233,12 @@ export class FlutterAdapter implements IFrameworkAdapter {
     }
   }
 
-  private broadcastLivePatch(dartSource: string): void {
+  private broadcastLivePatch(): void {
     if (this.sseClients.length === 0) return;
 
-    const parsed = parseFlutterSource(dartSource);
-    const message = JSON.stringify({ type: "flutter-patch", payload: parsed });
+    const snapshot = scanFlutterWorkspace(this.projectPath, this.memoryBuffers, this.preferredScreen);
+    const compiled = compileFlutterWorkspace(snapshot);
+    const message = JSON.stringify({ type: "flutter-patch", payload: compiled });
 
     for (const client of this.sseClients) {
       try {
@@ -260,7 +281,7 @@ export class FlutterAdapter implements IFrameworkAdapter {
       supportsHmr: true,
       supportsHotRestart: true,
       supportsElementInspection: true,
-      targetPlatform: "Flutter Engine (Live Hot-Swap / Android ART)",
+      targetPlatform: "Flutter Engine (Live Multi-Screen Hot-Swap / Android ART)",
     };
   }
 }
