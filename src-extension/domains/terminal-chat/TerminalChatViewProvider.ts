@@ -29,15 +29,11 @@ export class TerminalChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private seedWelcomeMessage(): void {
-    const folderName = path.basename(this.activeCwd || "Projet");
     this.messages = [
       {
         id: "welcome-1",
         role: "assistant",
-        text:
-          `Salut ! Ton terminal classique a été remplacé par cette discussion directe (**${folderName}**).\n` +
-          `Écris-moi naturellement (*"état git"*, *"installe les dépendances"*, *"analyse le code"*) ou envoie directement une commande (\`flutter pub get\`, \`git status\`, etc.).`,
-        status: "success",
+        text: "Bonjour ! Que souhaites-tu faire ?",
         timestamp: this.formatClockNow(),
       },
     ];
@@ -92,7 +88,6 @@ export class TerminalChatViewProvider implements vscode.WebviewViewProvider {
 
     if (translation.ideCommand) {
       await vscode.commands.executeCommand(translation.ideCommand);
-      replyMsg.codeOutput = "✓ Aperçu mobile synchronisé et relancé en direct.";
       replyMsg.status = "success";
       this.syncWebview();
       return;
@@ -105,8 +100,11 @@ export class TerminalChatViewProvider implements vscode.WebviewViewProvider {
     const result = await executeChatShellCommand(
       translation.shellCommand,
       this.activeCwd,
-      (liveText) => {
-        replyMsg.codeOutput = liveText;
+      (cleanedText, isServerReady) => {
+        replyMsg.codeOutput = cleanedText;
+        if (isServerReady) {
+          replyMsg.status = "success";
+        }
         this.syncWebview();
       }
     );
@@ -127,4 +125,3 @@ export class TerminalChatViewProvider implements vscode.WebviewViewProvider {
     });
   }
 }
-

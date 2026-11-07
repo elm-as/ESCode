@@ -16,44 +16,59 @@ export interface CommandExecutionResult {
 }
 
 /**
- * Translates natural French conversational messages or direct shell inputs
- * into an actionable shell command and a friendly human response header.
+ * Strips all ANSI escape sequences and terminal control codes from stdout/stderr.
+ */
+export function cleanTerminalOutput(raw: string): string {
+  return raw
+    .replace(/\x1B\[[0-9;?]*[ -/]*[@-~]/g, "")
+    .replace(/\x1B\][^\x07]*(\x07|\x1B\\)/g, "")
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+    .replace(/\r\n/g, "\n")
+    .trim();
+}
+
+/**
+ * Translates natural French messages or direct shell commands into actions.
  */
 export function interpretUserChatInput(input: string, cwd: string): ChatCommandTranslation {
   const trimmed = input.trim();
   const lower = trimmed.toLowerCase();
   const isFlutter = fs.existsSync(path.join(cwd, "pubspec.yaml"));
-  const isNode = fs.existsSync(path.join(cwd, "package.json"));
 
-  if (/^(salut|bonjour|hello|hey|coucou|aide|help|\?)$/i.test(lower)) {
-    const projectType = isFlutter ? "Flutter" : isNode ? "Node / Web" : "Mobile / Web";
+  if (/^(salut|bonjour|hello|hey|coucou|yo)$/i.test(lower)) {
+    return {
+      conversationalIntro: "Bonjour ! Tout est prêt, que souhaites-tu lancer ?",
+      shellCommand: null,
+    };
+  }
+
+  if (/^(aide|help|\?)$/i.test(lower)) {
     return {
       conversationalIntro:
-        `Salut ! Je suis ton terminal interactif Elmas Studio (projet **${path.basename(cwd)}** — ${projectType}).\n` +
-        `Tu peux m'écrire normalement (ex: *"état git"*, *"installe les dépendances"*, *"analyse le code"*, *"relance l'aperçu"*) ou m'envoyer directement n'importe quelle commande système.`,
+        "Tu peux taper directement une commande (`pnpm run dev`, `git status`, `flutter pub get`) ou écrire simplement : *état git*, *dépendances*, *analyser*, *nettoyer*.",
       shellCommand: null,
     };
   }
 
   if (lower.includes("relance") && (lower.includes("aperçu") || lower.includes("app") || lower.includes("preview"))) {
     return {
-      conversationalIntro: "Je relance immédiatement le serveur d'aperçu mobile en direct :",
+      conversationalIntro: "Aperçu mobile relancé.",
       shellCommand: null,
       ideCommand: "elmasStudio.runProject",
     };
   }
 
   if (lower.includes("dépendance") || lower.includes("dependance") || lower === "pub get" || lower === "install") {
-    const cmd = isFlutter ? "flutter pub get" : "npm install";
+    const cmd = isFlutter ? "flutter pub get" : "pnpm install";
     return {
-      conversationalIntro: `J'installe et synchronise les dépendances du projet (\`${cmd}\`) :`,
+      conversationalIntro: `Synchronisation des dépendances (${cmd})`,
       shellCommand: cmd,
     };
   }
 
-  if (lower.includes("état git") || lower.includes("etat git") || lower === "status" || lower.includes("changé")) {
+  if (lower.includes("état git") || lower.includes("etat git") || lower === "status") {
     return {
-      conversationalIntro: "Voici l'état actuel des fichiers modifiés dans ton dépôt Git :",
+      conversationalIntro: "État Git du projet",
       shellCommand: "git status -s",
     };
   }
@@ -61,43 +76,35 @@ export function interpretUserChatInput(input: string, cwd: string): ChatCommandT
   if (lower.includes("nettoie") || lower.includes("nettoyer") || lower === "clean") {
     const cmd = isFlutter ? "flutter clean" : "git status -s";
     return {
-      conversationalIntro: `Je nettoie les fichiers de build temporaires (\`${cmd}\`) :`,
+      conversationalIntro: `Nettoyage (${cmd})`,
       shellCommand: cmd,
     };
   }
 
   if (lower.includes("analyse") || lower.includes("erreurs") || lower.includes("vérifie")) {
-    const cmd = isFlutter ? "flutter analyze" : "git status -s";
+    const cmd = isFlutter ? "flutter analyze" : "npx tsc --noEmit";
     return {
-      conversationalIntro: `J'analyse le code du projet pour détecter d'éventuels problèmes (\`${cmd}\`) :`,
+      conversationalIntro: `Analyse du code (${cmd})`,
       shellCommand: cmd,
     };
   }
 
-  if (lower.includes("liste les fichiers") || lower === "fichiers") {
-    return {
-      conversationalIntro: `Voici le contenu du dossier \`${path.basename(cwd)}\` :`,
-      shellCommand: "Get-ChildItem -Name",
-    };
-  }
-
   return {
-    conversationalIntro: `Exécution de \`${trimmed}\` :`,
+    conversationalIntro: "",
     shellCommand: trimmed,
   };
 }
 
 /**
- * Executes a shell command in PowerShell with live streaming output callback.
+ * Executes a shell command in UTF-8 PowerShell with ANSI-cleaned streaming output.
  */
 export function executeChatShellCommand(
   command: string,
   cwd: string,
-  onChunk: (chunkText: string) => void
+  onChunk: (cleanedText: string, isServerReady: boolean) => void
 ): Promise<CommandExecutionResult> {
   const startTime = Date.now();
 
-  // Handle 'cd <dir>' directly so working directory persists across chat messages
   const cdMatch = command.match(/^cd\s+(.+)$/i);
   if (cdMatch) {
     const targetRaw = cdMatch[1].trim().replace(/^["']|["']$/g, "");
@@ -105,55 +112,56 @@ export function executeChatShellCommand(
     if (fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()) {
       return Promise.resolve({
         exitCode: 0,
-        output: `Dossier actif changé vers : ${resolved}`,
+        output: `Dossier actif : ${resolved}`,
         durationMs: Date.now() - startTime,
         newCwd: resolved,
       });
     }
     return Promise.resolve({
       exitCode: 1,
-      output: `Le dossier '${targetRaw}' est introuvable.`,
+      output: `Dossier introuvable : ${targetRaw}`,
       durationMs: Date.now() - startTime,
       newCwd: cwd,
     });
   }
 
   return new Promise((resolve) => {
-    const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", command], {
+    const utf8Command = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $OutputEncoding = [System.Text.Encoding]::UTF8; ${command}`;
+    const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", utf8Command], {
       cwd,
-      env: { ...process.env, FORCE_COLOR: "0" },
+      env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0", TERM: "dumb" },
       windowsHide: true,
     });
 
-    let fullOutput = "";
+    let rawOutput = "";
 
     const append = (data: Buffer) => {
-      const text = data.toString("utf8");
-      fullOutput += text;
-      onChunk(fullOutput);
+      rawOutput += data.toString("utf8");
+      const cleaned = cleanTerminalOutput(rawOutput);
+      const isReady = /localhost:\d+|127\.0\.0\.1:\d+|ready in \d+/i.test(cleaned);
+      onChunk(cleaned, isReady);
     };
 
     child.stdout.on("data", append);
     child.stderr.on("data", append);
 
     child.on("error", (err) => {
-      const msg = `Impossible de lancer la commande : ${err.message}`;
       resolve({
         exitCode: 1,
-        output: msg,
+        output: `Erreur : ${err.message}`,
         durationMs: Date.now() - startTime,
         newCwd: cwd,
       });
     });
 
     child.on("close", (code) => {
+      const cleaned = cleanTerminalOutput(rawOutput);
       resolve({
         exitCode: code ?? 0,
-        output: fullOutput.trim() || "Commande exécutée avec succès (aucune sortie texte).",
+        output: cleaned || "Terminé.",
         durationMs: Date.now() - startTime,
         newCwd: cwd,
       });
     });
   });
 }
-

@@ -59,14 +59,11 @@ class TerminalChatViewProvider {
         return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     }
     seedWelcomeMessage() {
-        const folderName = path.basename(this.activeCwd || "Projet");
         this.messages = [
             {
                 id: "welcome-1",
                 role: "assistant",
-                text: `Salut ! Ton terminal classique a été remplacé par cette discussion directe (**${folderName}**).\n` +
-                    `Écris-moi naturellement (*"état git"*, *"installe les dépendances"*, *"analyse le code"*) ou envoie directement une commande (\`flutter pub get\`, \`git status\`, etc.).`,
-                status: "success",
+                text: "Bonjour ! Que souhaites-tu faire ?",
                 timestamp: this.formatClockNow(),
             },
         ];
@@ -111,7 +108,6 @@ class TerminalChatViewProvider {
         this.syncWebview();
         if (translation.ideCommand) {
             await vscode.commands.executeCommand(translation.ideCommand);
-            replyMsg.codeOutput = "✓ Aperçu mobile synchronisé et relancé en direct.";
             replyMsg.status = "success";
             this.syncWebview();
             return;
@@ -119,8 +115,11 @@ class TerminalChatViewProvider {
         if (!translation.shellCommand) {
             return;
         }
-        const result = await (0, terminal_chat_runner_1.executeChatShellCommand)(translation.shellCommand, this.activeCwd, (liveText) => {
-            replyMsg.codeOutput = liveText;
+        const result = await (0, terminal_chat_runner_1.executeChatShellCommand)(translation.shellCommand, this.activeCwd, (cleanedText, isServerReady) => {
+            replyMsg.codeOutput = cleanedText;
+            if (isServerReady) {
+                replyMsg.status = "success";
+            }
             this.syncWebview();
         });
         this.activeCwd = result.newCwd;
