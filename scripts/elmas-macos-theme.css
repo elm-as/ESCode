@@ -164,6 +164,17 @@
   transition: background-color 0.1s ease !important;
 }
 
+/* Ensure file & folder icons in Explorer never overlap the first letter of filenames */
+.monaco-workbench .part.sidebar .monaco-icon-label::before {
+  box-sizing: content-box !important;
+  width: 16px !important;
+  min-width: 16px !important;
+  padding-right: 7px !important;
+  margin-right: 2px !important;
+  background-size: 16px 16px !important;
+  background-position: left center !important;
+}
+
 .monaco-workbench .part.sidebar .monaco-list-row:hover:not(.selected) {
   background-color: rgba(255, 255, 255, 0.045) !important;
 }
@@ -249,9 +260,24 @@
 }
 
 .monaco-workbench .part.editor .tabs-container > .tab .monaco-icon-label::before {
+  box-sizing: content-box !important;
+  width: 16px !important;
+  min-width: 16px !important;
+  padding-right: 6px !important;
   height: 26px !important;
   line-height: 26px !important;
-  background-position: center center !important;
+  background-size: 15px 15px !important;
+  background-position: left center !important;
+}
+
+/* Hide VSCodium 1.110 modern-ui-tabs inner fill/edge boxes that drew a gray bar inside tabs */
+.monaco-workbench .part.editor .tabs-container > .tab > .tab-fill,
+.monaco-workbench .part.editor .tabs-container > .tab > .tab-connected-edge,
+.monaco-workbench .part.editor .tabs-container > .tab .tab-border-top-container,
+.monaco-workbench .part.editor .tabs-container > .tab .tab-border-bottom-container {
+  display: none !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 .monaco-workbench .part.editor .tabs-container > .tab:hover:not(.active) {

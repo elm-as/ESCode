@@ -151,7 +151,7 @@ export class DevicePreviewViewProvider
         this.reloadFrameOnly();
         break;
       case "openLogs":
-        vscode.commands.executeCommand("workbench.action.output.toggleOutput");
+        vscode.commands.executeCommand("elmasStudio.terminalChat.focus");
         break;
       case "openSdkManager":
         vscode.commands.executeCommand("elmasStudio.openSdkManager");

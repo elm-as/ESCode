@@ -11,7 +11,8 @@
   "activationEvents": [
     "*",
     "onStartupFinished",
-    "onWebviewPanel:elmasStudio.devicePreviewPanel"
+    "onWebviewPanel:elmasStudio.devicePreviewPanel",
+    "onView:elmasStudio.terminalChat"
   ],
   "contributes": {
     "viewsContainers": {
@@ -21,6 +22,13 @@
           "title": "Elmas Studio",
           "icon": "media/device-icon.svg"
         }
+      ],
+      "panel": [
+        {
+          "id": "elmas-terminal-chat-panel",
+          "title": "Terminal Chat",
+          "icon": "$(comment-discussion)"
+        }
       ]
     },
     "views": {
@@ -29,6 +37,13 @@
           "type": "webview",
           "id": "elmasStudio.devicePreview",
           "name": "Appareil Mobile Virtuel"
+        }
+      ],
+      "elmas-terminal-chat-panel": [
+        {
+          "type": "webview",
+          "id": "elmasStudio.terminalChat",
+          "name": "Terminal Chat"
         }
       ]
     },

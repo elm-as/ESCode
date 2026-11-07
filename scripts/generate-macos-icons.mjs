@@ -34,15 +34,15 @@ export function generateMacosIconTheme(desktopDir) {
   <path d="M1.8 10.5C1.8 9.4 2.7 8.5 3.8 8.5h16.4c1.1 0 2 .9 1.85 2l-1.1 7.5c-.15 1.1-1.05 2-2.15 2H5.2c-1.1 0-2-.9-2.15-2L1.8 10.5z" fill="url(#go)"/>
 </svg>`;
 
-  const makeFileBadgeSvg = (bgStart, bgEnd, accentColor, label) => `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  const makeFileGlyphSvg = (bgStart, bgEnd, accentColor, innerPath) => `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
   <defs>
     <linearGradient id="fb" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="${bgStart}"/>
       <stop offset="100%" stop-color="${bgEnd}"/>
     </linearGradient>
   </defs>
-  <rect x="3" y="3" width="18" height="18" rx="5" fill="url(#fb)" stroke="${accentColor}" stroke-opacity="0.45" stroke-width="1.2"/>
-  <text x="12" y="15.2" text-anchor="middle" fill="${accentColor}" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" font-weight="800" font-size="8.2" letter-spacing="-0.3">${label}</text>
+  <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" fill="url(#fb)" stroke="${accentColor}" stroke-opacity="0.45" stroke-width="1.2"/>
+  ${innerPath}
 </svg>`;
 
   const svgs = {
@@ -58,17 +58,17 @@ export function generateMacosIconTheme(desktopDir) {
     "folder-assets-open.svg": makeFolderOpenSvg("#047857", "#34D399", "#065F46"),
     "folder-platform.svg": makeFolderSvg("#4F46E5", "#818CF8", "#4338CA"),
     "folder-platform-open.svg": makeFolderOpenSvg("#3730A3", "#818CF8", "#312E81"),
-    "file.svg": makeFileBadgeSvg("#1E1E26", "#14141A", "#A1A1AA", "DOC"),
-    "dart.svg": makeFileBadgeSvg("#0C2A3E", "#081C2B", "#38BDF8", "DART"),
-    "ts.svg": makeFileBadgeSvg("#102644", "#0A192F", "#60A5FA", "TS"),
-    "react.svg": makeFileBadgeSvg("#0B2938", "#071B26", "#22D3EE", "JSX"),
-    "js.svg": makeFileBadgeSvg("#2E240B", "#1F1806", "#FBBF24", "JS"),
-    "kotlin.svg": makeFileBadgeSvg("#28163E", "#190D29", "#C084FC", "KT"),
-    "html.svg": makeFileBadgeSvg("#36180E", "#230F08", "#FB923C", "HTML"),
-    "css.svg": makeFileBadgeSvg("#17203D", "#0E1428", "#818CF8", "CSS"),
-    "json.svg": makeFileBadgeSvg("#262214", "#18150C", "#F59E0B", "{ }"),
-    "yaml.svg": makeFileBadgeSvg("#2B1726", "#1C0E18", "#F472B6", "YML"),
-    "md.svg": makeFileBadgeSvg("#1A242B", "#11181D", "#94A3B8", "MD"),
+    "file.svg": makeFileGlyphSvg("#1E1E26", "#14141A", "#A1A1AA", `<path d="M8 7h5l3 3v7H8V7z" fill="none" stroke="#A1A1AA" stroke-width="1.6" stroke-linejoin="round"/>`),
+    "dart.svg": makeFileGlyphSvg("#08263A", "#051824", "#38BDF8", `<path d="M12 5.5L17.5 11L12 18.5L6.5 11L12 5.5Z" fill="#0284C7" stroke="#38BDF8" stroke-width="1.3" stroke-linejoin="round"/><path d="M12 5.5L17.5 11H12V5.5Z" fill="#7DD3FC"/>`),
+    "ts.svg": makeFileGlyphSvg("#102644", "#0A192F", "#60A5FA", `<path d="M7.5 9.5h5M10 9.5v6M16.5 10.5c-.8-.5-2.2-.4-2.2.6 0 1.4 2.5.9 2.5 2.5 0 1.1-1.4 1.3-2.5.7" fill="none" stroke="#60A5FA" stroke-width="1.7" stroke-linecap="round"/>`),
+    "react.svg": makeFileGlyphSvg("#0B2938", "#071B26", "#22D3EE", `<circle cx="12" cy="12" r="1.6" fill="#22D3EE"/><ellipse cx="12" cy="12" rx="6" ry="2.4" transform="rotate(30 12 12)" fill="none" stroke="#22D3EE" stroke-width="1.2"/><ellipse cx="12" cy="12" rx="6" ry="2.4" transform="rotate(-30 12 12)" fill="none" stroke="#22D3EE" stroke-width="1.2"/>`),
+    "js.svg": makeFileGlyphSvg("#2E240B", "#1F1806", "#FBBF24", `<path d="M10.5 9v5c0 1-.8 1.5-1.8 1.2M16.2 9.8c-.8-.5-2.2-.3-2.2.7 0 1.4 2.5.9 2.5 2.5 0 1.1-1.4 1.3-2.5.7" fill="none" stroke="#FBBF24" stroke-width="1.7" stroke-linecap="round"/>`),
+    "kotlin.svg": makeFileGlyphSvg("#28163E", "#190D29", "#C084FC", `<path d="M7.5 7.5h9l-4.5 4.5 4.5 4.5h-9v-9z" fill="#A855F7" stroke="#C084FC" stroke-width="1.1" stroke-linejoin="round"/>`),
+    "html.svg": makeFileGlyphSvg("#36180E", "#230F08", "#FB923C", `<path d="M9.5 9.5L7 12l2.5 2.5M14.5 9.5L17 12l-2.5 2.5" fill="none" stroke="#FB923C" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`),
+    "css.svg": makeFileGlyphSvg("#17203D", "#0E1428", "#818CF8", `<path d="M9.5 7.5L8 16.5M16 7.5l-1.5 9M7 10.5h10M6.5 13.5h10" fill="none" stroke="#818CF8" stroke-width="1.5" stroke-linecap="round"/>`),
+    "json.svg": makeFileGlyphSvg("#262214", "#18150C", "#F59E0B", `<path d="M9.5 8C8.3 8 8 8.8 8 9.8v1c0 .7-.5 1.2-1.2 1.2.7 0 1.2.5 1.2 1.2v1c0 1 .3 1.8 1.5 1.8M14.5 8c1.2 0 1.5.8 1.5 1.8v1c0 .7.5 1.2 1.2 1.2-.7 0-1.2.5-1.2 1.2v1c0 1-.3 1.8-1.5 1.8" fill="none" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round"/>`),
+    "yaml.svg": makeFileGlyphSvg("#2B1726", "#1C0E18", "#F472B6", `<circle cx="9" cy="9" r="1.4" fill="#F472B6"/><circle cx="15" cy="12" r="1.4" fill="#F472B6"/><circle cx="9" cy="15" r="1.4" fill="#F472B6"/><path d="M10.4 9h4.6M9 12h4.6M10.4 15h4.6" stroke="#F472B6" stroke-width="1.4" stroke-linecap="round"/>`),
+    "md.svg": makeFileGlyphSvg("#1A242B", "#11181D", "#94A3B8", `<path d="M7.5 15V9l2.5 3 2.5-3v6M16 9v6m-2-2l2 2 2-2" fill="none" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`),
   };
 
   for (const [name, content] of Object.entries(svgs)) {

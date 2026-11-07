@@ -37,17 +37,21 @@ exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
 const DevicePreviewViewProvider_1 = require("./domains/preview/DevicePreviewViewProvider");
+const TerminalChatViewProvider_1 = require("./domains/terminal-chat/TerminalChatViewProvider");
 const adapter_manager_1 = require("./domains/adapters/adapter-manager");
 const sdk_detector_1 = require("./domains/sdk/sdk-detector");
 let previewProvider;
+let terminalChatProvider;
 let runStatusBarItem;
 let modeStatusBarItem;
+let chatStatusBarItem;
 let liveEditTimer = null;
 let autoSaveTimer = null;
 function activate(context) {
     previewProvider = new DevicePreviewViewProvider_1.DevicePreviewViewProvider();
+    terminalChatProvider = new TerminalChatViewProvider_1.TerminalChatViewProvider();
     // 1. Register Webview View & Panel Serializer (restores panel on reload)
-    context.subscriptions.push(vscode.window.registerWebviewViewProvider(DevicePreviewViewProvider_1.DevicePreviewViewProvider.viewType, previewProvider), vscode.window.registerWebviewPanelSerializer("elmasStudio.devicePreviewPanel", previewProvider));
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider(DevicePreviewViewProvider_1.DevicePreviewViewProvider.viewType, previewProvider), vscode.window.registerWebviewViewProvider(TerminalChatViewProvider_1.TerminalChatViewProvider.viewType, terminalChatProvider, { webviewOptions: { retainContextWhenHidden: true } }), vscode.window.registerWebviewPanelSerializer("elmasStudio.devicePreviewPanel", previewProvider));
     // 2. Register Commands
     context.subscriptions.push(vscode.commands.registerCommand("elmasStudio.openPreview", async () => {
         await previewProvider.openAsPanel(context.extensionUri);
@@ -81,6 +85,12 @@ function activate(context) {
     modeStatusBarItem.tooltip = "Ouvrir l'appareil mobile virtuel Elmas Studio";
     modeStatusBarItem.show();
     context.subscriptions.push(modeStatusBarItem);
+    chatStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 98);
+    chatStatusBarItem.command = "elmasStudio.terminalChat.focus";
+    chatStatusBarItem.text = "$(comment-discussion) Terminal Chat";
+    chatStatusBarItem.tooltip = "Ouvrir le terminal sous forme de discussion interactive";
+    chatStatusBarItem.show();
+    context.subscriptions.push(chatStatusBarItem);
     // 4. Ultra-reactive keystroke listener (zero-save instant live preview)
     context.subscriptions.push(vscode.workspace.onDidChangeTextDocument((event) => {
         const doc = event.document;
@@ -121,13 +131,13 @@ function activate(context) {
         await adapter_manager_1.adapterManager.notifyDocumentEdited(doc.uri.fsPath, doc.getText());
         await adapter_manager_1.adapterManager.reloadProject();
     }));
-    // 7. Clean macOS Workspace Startup: collapse noisy bottom panel & ensure Live Simulator is ready
+    // 7. Activate Conversational Terminal Chat in bottom panel & ensure Live Simulator is ready
     setTimeout(async () => {
         try {
-            await vscode.commands.executeCommand("workbench.action.closePanel");
+            await vscode.commands.executeCommand("elmasStudio.terminalChat.focus");
         }
         catch {
-            // Ignore if panel already closed
+            // Ignore if view not ready yet
         }
         if (vscode.workspace.workspaceFolders?.length) {
             if (!previewProvider.hasActivePanel()) {
