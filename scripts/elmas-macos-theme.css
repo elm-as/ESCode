@@ -1,185 +1,323 @@
 /* === ELMAS MACOS SEQUOIA / XCODE DARK GLASS UI === */
 
-/* 1. Global Typography & macOS Antialiasing */
+/* 1. Global macOS Typography & Deep Obsidian Bento Canvas */
 .monaco-workbench {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI Variable Text", system-ui, sans-serif !important;
   -webkit-font-smoothing: antialiased !important;
   text-rendering: optimizeLegibility !important;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif !important;
-  letter-spacing: -0.008em;
+  background-color: #060608 !important;
 }
 
-/* 2. macOS Floating Pill Editor Tabs (Xcode / Arc / Safari style) */
-.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container {
-  padding: 4px 6px !important;
-  gap: 4px !important;
-  background: #0b0b0e !important;
+.monaco-workbench .part {
+  background-color: #060608;
 }
 
-.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab {
-  border-radius: 8px !important;
-  height: 28px !important;
-  margin-top: 2px !important;
-  border: 1px solid transparent !important;
-  transition: background-color 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease !important;
+/* Remove harsh legacy sash borders between floating islands */
+.monaco-sash {
+  background-color: transparent !important;
+}
+.monaco-sash.hover,
+.monaco-sash.active {
+  background-color: rgba(245, 158, 11, 0.45) !important;
 }
 
-.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab:hover:not(.active) {
-  background-color: rgba(255, 255, 255, 0.04) !important;
+/* 2. Unified macOS Titlebar with Authentic Traffic Lights & Xcode Dynamic Island */
+.monaco-workbench .part.titlebar {
+  background: #060608 !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
 
-.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.active {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.045) 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+/* Authentic macOS Traffic Light Window Controls (Red, Yellow, Green) on left of titlebar */
+.monaco-workbench .part.titlebar .titlebar-left {
+  display: flex !important;
+  align-items: center !important;
+  padding-left: 14px !important;
+  gap: 8px !important;
 }
 
-.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.active::before {
-  content: "";
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #f59e0b;
-  box-shadow: 0 0 6px rgba(245, 158, 11, 0.8);
+.monaco-workbench .part.titlebar .titlebar-left::before {
+  content: "" !important;
+  display: inline-block !important;
+  width: 52px !important;
+  height: 12px !important;
+  margin-right: 8px !important;
+  flex-shrink: 0 !important;
+  background-repeat: no-repeat !important;
+  background-size: 52px 12px !important;
+  background-image:
+    radial-gradient(circle at 6px 6px, #FF5F56 5.2px, #E0443E 5.8px, transparent 6.2px),
+    radial-gradient(circle at 26px 6px, #FFBD2E 5.2px, #DEA123 5.8px, transparent 6.2px),
+    radial-gradient(circle at 46px 6px, #27C93F 5.2px, #1AAB29 5.8px, transparent 6.2px) !important;
 }
 
-.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.active .tab-label {
-  padding-left: 6px !important;
-  font-weight: 500 !important;
-}
-
-.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab .tab-border-top-container,
-.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab .tab-border-bottom-container {
+/* Hide redundant app icon in titlebar since macOS traffic lights sit on the left */
+.monaco-workbench .part.titlebar .window-appicon {
   display: none !important;
 }
 
-/* 3. macOS Finder Rounded Sidebar List Rows */
-.monaco-workbench .part.sidebar .monaco-list .monaco-list-row {
+/* Compact menu button styled as a sleek macOS toolbar button */
+.monaco-workbench .part.titlebar .menubar.compact {
   border-radius: 7px !important;
-  margin-left: 7px !important;
-  width: calc(100% - 14px) !important;
-  padding-right: 6px !important;
-  transition: background-color 0.1s ease !important;
+  transition: background-color 0.14s ease !important;
+}
+.monaco-workbench .part.titlebar .menubar.compact:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-.monaco-workbench .part.sidebar .monaco-list .monaco-list-row.selected,
-.monaco-workbench .part.sidebar .monaco-list .monaco-list-row.focused {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 3px rgba(0, 0, 0, 0.25) !important;
-}
-
-.monaco-workbench .part.sidebar .pane-header {
-  font-size: 11px !important;
-  letter-spacing: 0.04em !important;
-  text-transform: uppercase !important;
-  font-weight: 600 !important;
-  opacity: 0.85;
-}
-
-/* 4. macOS Squircle Activity Bar Icons */
-.monaco-workbench .part.activitybar > .content .monaco-action-bar .action-item {
-  margin: 4px 6px !important;
-  border-radius: 10px !important;
-  overflow: hidden;
-  transition: background-color 0.15s ease, transform 0.12s ease !important;
-}
-
-.monaco-workbench .part.activitybar > .content .monaco-action-bar .action-item:hover {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-.monaco-workbench .part.activitybar > .content .monaco-action-bar .action-item.checked {
-  background: linear-gradient(180deg, rgba(245, 158, 11, 0.18) 0%, rgba(217, 119, 6, 0.08) 100%) !important;
-  box-shadow: inset 0 1px 0 rgba(251, 191, 36, 0.25), 0 2px 6px rgba(0, 0, 0, 0.3) !important;
-}
-
-.monaco-workbench .part.activitybar > .content .monaco-action-bar .action-item.checked .active-item-indicator::before {
-  display: none !important;
-}
-
-/* 5. macOS Spotlight / Raycast Command Center & QuickInput Modal */
+/* Xcode 16 Dynamic Island Target & Project Pill in Center of Titlebar */
 .monaco-workbench .part.titlebar .command-center-center {
-  border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.045) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.2) !important;
-  padding: 1px 10px !important;
-  transition: all 0.15s ease !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.035) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 999px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+  padding: 1px 14px !important;
+  height: 25px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  transition: all 0.16s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.monaco-workbench .part.titlebar .command-center-center::before {
+  content: "" !important;
+  display: inline-block !important;
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background-color: #27C93F !important;
+  box-shadow: 0 0 6px rgba(39, 201, 63, 0.65) !important;
+  margin-right: 8px !important;
+  flex-shrink: 0 !important;
 }
 
 .monaco-workbench .part.titlebar .command-center-center:hover {
-  background: rgba(255, 255, 255, 0.07) !important;
-  border-color: rgba(245, 158, 11, 0.35) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
 }
 
-.quick-input-widget {
+/* 3. Left Navigator Island (macOS Sequoia Floating Glass Bento Card) */
+.monaco-workbench .part.sidebar {
+  box-sizing: border-box !important;
+  background: linear-gradient(180deg, #0e0e13 0%, #0b0b0f 100%) !important;
+  border: 4px solid #060608 !important;
   border-radius: 14px !important;
-  top: 12vh !important;
-  background: rgba(20, 20, 25, 0.92) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.11) !important;
+  overflow: hidden !important;
+}
+
+/* Xcode-Style Integrated Top Navigator Bar inside the Sidebar */
+.monaco-workbench .part.sidebar > .composite.title,
+.monaco-workbench .part.sidebar .composite.bar {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  height: 36px !important;
+  padding: 0 8px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.monaco-workbench .part.sidebar .actions-container .action-item {
+  border-radius: 7px !important;
+  margin: 0 2px !important;
+  transition: all 0.14s ease !important;
+}
+
+.monaco-workbench .part.sidebar .actions-container .action-item.checked,
+.monaco-workbench .part.sidebar .actions-container .action-item:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+}
+
+/* Hide cluttered STRUCTURE (Outline) & CHRONOLOGIE (Timeline) sub-panes in Explorer */
+.monaco-workbench .explorer-viewlet .split-view-container > .split-view-view:not(:first-child) {
+  display: none !important;
+}
+.monaco-workbench .explorer-viewlet .split-view-container > .split-view-view:first-child {
+  height: 100% !important;
+  top: 0 !important;
+}
+.monaco-workbench .explorer-viewlet .explorer-folders-view {
+  height: 100% !important;
+}
+
+/* Clean macOS Finder Section Header inside Navigator */
+.monaco-workbench .part.sidebar .pane-header {
+  background: transparent !important;
+  border-top: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+  color: #8e8e99 !important;
+  padding: 0 10px !important;
+}
+
+/* macOS Finder Rounded Pill Selection Rows in File Tree */
+.monaco-workbench .part.sidebar .monaco-list-row {
+  border-radius: 7px !important;
+  margin: 0 6px !important;
+  width: calc(100% - 12px) !important;
+  font-size: 12.5px !important;
+  transition: background-color 0.1s ease !important;
+}
+
+.monaco-workbench .part.sidebar .monaco-list-row:hover:not(.selected) {
+  background-color: rgba(255, 255, 255, 0.045) !important;
+}
+
+.monaco-workbench .part.sidebar .monaco-list-row.selected,
+.monaco-workbench .part.sidebar .monaco-list-row.focused {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.18) 0%, rgba(245, 158, 11, 0.09) 100%) !important;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.28) !important;
+  color: #fde68a !important;
+  outline: none !important;
+}
+
+/* 4. Editor Group Islands & Safari / Xcode Segmented Capsule Tabs */
+.monaco-workbench .part.editor .editor-group-container {
+  box-sizing: border-box !important;
+  background-color: #101015 !important;
+  border: 4px solid #060608 !important;
+  border-radius: 14px !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.11) !important;
+  overflow: hidden !important;
+}
+
+.monaco-workbench .part.editor .title.tabs {
+  background: #0c0c10 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.monaco-workbench .part.editor .tabs-and-actions-container {
+  background: transparent !important;
+  height: 36px !important;
+  align-items: center !important;
+}
+
+.monaco-workbench .part.editor .tabs-container {
+  height: 36px !important;
+  align-items: center !important;
+  padding: 0 4px !important;
+}
+
+.monaco-workbench .part.editor .tabs-container > .tab {
+  border-radius: 7px !important;
+  margin: 4px 3px !important;
+  height: 27px !important;
+  line-height: 27px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  transition: all 0.14s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.monaco-workbench .part.editor .tabs-container > .tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.045) !important;
+}
+
+.monaco-workbench .part.editor .tabs-container > .tab.active {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.055) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1.5px 0 rgba(245, 158, 11, 0.75) !important;
+  color: #fafafa !important;
+}
+
+/* Hide default top/bottom tab border lines */
+.monaco-workbench .part.editor .tabs-container > .tab .tab-border-top-container,
+.monaco-workbench .part.editor .tabs-container > .tab .tab-border-bottom-container {
+  display: none !important;
+}
+
+/* 5. Bottom Console Drawer (Floating Bento Island + Segmented Pill Tabs) */
+.monaco-workbench .part.panel {
+  box-sizing: border-box !important;
+  background: #0c0c10 !important;
+  border: 4px solid #060608 !important;
+  border-radius: 14px !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  overflow: hidden !important;
+}
+
+.monaco-workbench .part.panel .composite.title {
+  background: rgba(255, 255, 255, 0.025) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  height: 36px !important;
+  padding: 0 10px !important;
+}
+
+/* Transform uppercase VS Code panel tabs into macOS Segmented Control pills */
+.monaco-workbench .part.panel .composite-bar .monaco-action-bar .action-item {
+  border-radius: 6px !important;
+  margin: 4px 2px !important;
+  padding: 0 8px !important;
+  height: 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.monaco-workbench .part.panel .composite-bar .monaco-action-bar .action-item .action-label {
+  text-transform: capitalize !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  border-bottom: none !important;
+}
+
+.monaco-workbench .part.panel .composite-bar .monaco-action-bar .action-item.checked {
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+.monaco-workbench .part.panel .composite-bar .monaco-action-bar .action-item .active-item-indicator {
+  display: none !important;
+}
+
+/* 6. Floating Glass Command Palette / Quick Input Modal */
+.quick-input-widget {
+  background: rgba(20, 20, 26, 0.92) !important;
   backdrop-filter: blur(28px) saturate(180%) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-  padding: 6px !important;
+  border-radius: 14px !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.72), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
   overflow: hidden !important;
+  margin-top: 10px !important;
 }
 
-.quick-input-widget .quick-input-header {
-  padding: 6px 6px 8px 6px !important;
+/* 7. Bottom Statusbar with macOS Capsule Action Badges */
+.monaco-workbench .part.statusbar {
+  background: #060608 !important;
+  border-top: none !important;
+  height: 26px !important;
+  font-size: 11.5px !important;
+  padding: 0 6px !important;
 }
 
-.quick-input-widget .monaco-inputbox {
-  border-radius: 9px !important;
-  padding: 4px 8px !important;
-  background: rgba(0, 0, 0, 0.35) !important;
-  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+.monaco-workbench .part.statusbar .statusbar-item[id*="elmasStudio"] > a {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%) !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  color: #fbbf24 !important;
+  border-radius: 999px !important;
+  padding: 0 10px !important;
+  margin: 2px 3px !important;
+  height: 19px !important;
+  line-height: 19px !important;
+  font-weight: 500 !important;
 }
 
-.quick-input-widget .monaco-list .monaco-list-row {
-  border-radius: 7px !important;
-  margin: 0 4px !important;
-  width: calc(100% - 8px) !important;
-}
-
-/* 6. macOS Context Menus, Hover Cards, Suggest Popover & Toasts */
-.monaco-menu .monaco-scrollable-element,
-.context-view.monaco-menu-container,
-.monaco-editor .suggest-widget,
-.monaco-editor .monaco-hover {
-  border-radius: 10px !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
-  overflow: hidden !important;
-}
-
-.notifications-toasts .notification-toast {
-  border-radius: 12px !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65) !important;
-}
-
-/* 7. macOS Pill Overlay Scrollbars */
+/* 8. Ultra-thin macOS Overlay Scrollbars */
 .monaco-scrollable-element > .scrollbar > .slider {
   border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+.monaco-scrollable-element > .scrollbar > .slider:hover {
+  background: rgba(245, 158, 11, 0.45) !important;
 }
 
-.monaco-scrollable-element > .scrollbar.vertical > .slider {
-  width: 5px !important;
-  left: 3px !important;
-}
-
-.monaco-scrollable-element > .scrollbar.horizontal > .slider {
-  height: 5px !important;
-  top: 3px !important;
-}
-
-/* 8. Refined Breadcrumbs Bar */
-.monaco-breadcrumbs {
-  background: #111115 !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
-  padding: 0 12px !important;
-  font-size: 12px !important;
-  opacity: 0.85;
-}
 /* === END ELMAS MACOS SEQUOIA UI === */

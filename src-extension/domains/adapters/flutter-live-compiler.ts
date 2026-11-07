@@ -117,6 +117,20 @@ export function extractBalancedParen(source: string, startIdx: number): string {
   return source.slice(startIdx + 1);
 }
 
+function stripDialogsAndModals(source: string): string {
+  let result = source;
+  const dialogCallRegex = /(?:showDialog|showModalBottomSheet|ScaffoldMessenger\.of)\s*(?:<[^>]+>)?\s*\(/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = dialogCallRegex.exec(result)) !== null) {
+    const openIdx = match.index + match[0].length - 1;
+    const inner = extractBalancedParen(result, openIdx);
+    result = result.slice(0, match.index) + "/* modal */" + result.slice(openIdx + inner.length + 1);
+    dialogCallRegex.lastIndex = match.index + 11;
+  }
+  return result;
+}
+
 function parseTextStyleCss(block: string, theme: FlutterThemeTokens, onDarkBg: boolean): string {
   const styles: string[] = [];
   const defaultColor = onDarkBg || theme.isDark ? "#ffffff" : "#1f2937";
@@ -136,23 +150,6 @@ function parseTextStyleCss(block: string, theme: FlutterThemeTokens, onDarkBg: b
   if (spacingMatch) styles.push(`letter-spacing: ${spacingMatch[1]}px`);
 
   return styles.join("; ");
-}
-
-function stripDialogsAndModals(source: string): string {
-  const modalMarkers = [
-    "void _show",
-    "Future<void> _show",
-    "showDialog(",
-    "showModalBottomSheet(",
-  ];
-  let cutIdx = source.length;
-  for (const marker of modalMarkers) {
-    const idx = source.indexOf(marker);
-    if (idx !== -1 && idx < cutIdx) {
-      cutIdx = idx;
-    }
-  }
-  return source.slice(0, cutIdx);
 }
 
 function compileActionGrid(source: string, theme: FlutterThemeTokens): string {
@@ -300,7 +297,9 @@ function compileScreenWidgets(
         rawStr &&
         !rawStr.startsWith("Erreur") &&
         !rawStr.startsWith("Chargement") &&
-        !rawStr.includes("_lockExpiry")
+        !rawStr.includes("_lockExpiry") &&
+        rawStr !== "MMMM yyyy" &&
+        rawStr !== "dd/MM/yyyy"
       ) {
         const textVal = formatInterpolatedText(rawStr);
         const styleCss = parseTextStyleCss(inner, theme, hasDarkGradient);
@@ -309,7 +308,7 @@ function compileScreenWidgets(
     } else if (widgetType === "SizedBox" && !fullSource.includes("_buildFinancialSummary")) {
       const hMatch = inner.match(/height\s*:\s*([0-9.]+)/);
       if (hMatch) {
-        const h = Math.min(parseFloat(hMatch[1]), 18);
+        const h = Math.min(parseFloat(hMatch[1]), 16);
         parts.push(`<div style="height: ${h}px; width: 100%; flex-shrink: 0;"></div>`);
       }
     } else if (widgetType === "ElevatedButton" || widgetType === "OutlinedButton") {

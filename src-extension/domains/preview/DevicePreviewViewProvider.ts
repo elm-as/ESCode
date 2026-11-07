@@ -26,6 +26,10 @@ export class DevicePreviewViewProvider
   private errorMessage?: string;
   private zoom: number = 0.85;
 
+  hasActivePanel(): boolean {
+    return Boolean(this.currentPanel || this.currentView);
+  }
+
   resolveWebviewView(
     webviewView: vscode.WebviewView,
     _context: vscode.WebviewViewResolveContext,
@@ -206,6 +210,7 @@ export class DevicePreviewViewProvider
       this.previewUrl = result.previewUrl;
       this.status = "running";
       this.refreshWebviews();
+      setTimeout(() => this.refreshWebviews(), 150);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.status = "error";

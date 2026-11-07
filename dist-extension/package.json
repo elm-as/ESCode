@@ -9,7 +9,9 @@
   },
   "main": "./extension.js",
   "activationEvents": [
-    "onStartupFinished"
+    "*",
+    "onStartupFinished",
+    "onWebviewPanel:elmasStudio.devicePreviewPanel"
   ],
   "contributes": {
     "viewsContainers": {

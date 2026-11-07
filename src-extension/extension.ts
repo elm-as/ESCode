@@ -115,6 +115,21 @@ export function activate(context: vscode.ExtensionContext): void {
       await adapterManager.reloadProject();
     })
   );
+
+  // 7. Clean macOS Workspace Startup: collapse noisy bottom panel & ensure Live Simulator is ready
+  setTimeout(async () => {
+    try {
+      await vscode.commands.executeCommand("workbench.action.closePanel");
+    } catch {
+      // Ignore if panel already closed
+    }
+    if (vscode.workspace.workspaceFolders?.length) {
+      if (!previewProvider.hasActivePanel()) {
+        await previewProvider.openAsPanel(context.extensionUri);
+      }
+      updateStatusBar(true);
+    }
+  }, 300);
 }
 
 function updateStatusBar(isRunning: boolean): void {

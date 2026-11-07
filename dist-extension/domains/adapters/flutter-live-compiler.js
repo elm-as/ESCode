@@ -94,6 +94,18 @@ function extractBalancedParen(source, startIdx) {
     }
     return source.slice(startIdx + 1);
 }
+function stripDialogsAndModals(source) {
+    let result = source;
+    const dialogCallRegex = /(?:showDialog|showModalBottomSheet|ScaffoldMessenger\.of)\s*(?:<[^>]+>)?\s*\(/g;
+    let match;
+    while ((match = dialogCallRegex.exec(result)) !== null) {
+        const openIdx = match.index + match[0].length - 1;
+        const inner = extractBalancedParen(result, openIdx);
+        result = result.slice(0, match.index) + "/* modal */" + result.slice(openIdx + inner.length + 1);
+        dialogCallRegex.lastIndex = match.index + 11;
+    }
+    return result;
+}
 function parseTextStyleCss(block, theme, onDarkBg) {
     const styles = [];
     const defaultColor = onDarkBg || theme.isDark ? "#ffffff" : "#1f2937";
@@ -113,22 +125,6 @@ function parseTextStyleCss(block, theme, onDarkBg) {
     if (spacingMatch)
         styles.push(`letter-spacing: ${spacingMatch[1]}px`);
     return styles.join("; ");
-}
-function stripDialogsAndModals(source) {
-    const modalMarkers = [
-        "void _show",
-        "Future<void> _show",
-        "showDialog(",
-        "showModalBottomSheet(",
-    ];
-    let cutIdx = source.length;
-    for (const marker of modalMarkers) {
-        const idx = source.indexOf(marker);
-        if (idx !== -1 && idx < cutIdx) {
-            cutIdx = idx;
-        }
-    }
-    return source.slice(0, cutIdx);
 }
 function compileActionGrid(source, theme) {
     const actions = [];
@@ -258,7 +254,9 @@ function compileScreenWidgets(screen, theme, hasDarkGradient) {
             if (rawStr &&
                 !rawStr.startsWith("Erreur") &&
                 !rawStr.startsWith("Chargement") &&
-                !rawStr.includes("_lockExpiry")) {
+                !rawStr.includes("_lockExpiry") &&
+                rawStr !== "MMMM yyyy" &&
+                rawStr !== "dd/MM/yyyy") {
                 const textVal = formatInterpolatedText(rawStr);
                 const styleCss = parseTextStyleCss(inner, theme, hasDarkGradient);
                 parts.push(`<div class="fl-text" style="${styleCss}">${textVal}</div>`);
@@ -267,7 +265,7 @@ function compileScreenWidgets(screen, theme, hasDarkGradient) {
         else if (widgetType === "SizedBox" && !fullSource.includes("_buildFinancialSummary")) {
             const hMatch = inner.match(/height\s*:\s*([0-9.]+)/);
             if (hMatch) {
-                const h = Math.min(parseFloat(hMatch[1]), 18);
+                const h = Math.min(parseFloat(hMatch[1]), 16);
                 parts.push(`<div style="height: ${h}px; width: 100%; flex-shrink: 0;"></div>`);
             }
         }

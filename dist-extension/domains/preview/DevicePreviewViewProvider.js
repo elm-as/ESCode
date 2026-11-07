@@ -51,6 +51,9 @@ class DevicePreviewViewProvider {
     previewUrl = null;
     errorMessage;
     zoom = 0.85;
+    hasActivePanel() {
+        return Boolean(this.currentPanel || this.currentView);
+    }
     resolveWebviewView(webviewView, _context, _token) {
         this.currentView = webviewView;
         webviewView.webview.options = { enableScripts: true };
@@ -199,6 +202,7 @@ class DevicePreviewViewProvider {
             this.previewUrl = result.previewUrl;
             this.status = "running";
             this.refreshWebviews();
+            setTimeout(() => this.refreshWebviews(), 150);
         }
         catch (err) {
             const msg = err instanceof Error ? err.message : String(err);

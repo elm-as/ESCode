@@ -121,6 +121,21 @@ function activate(context) {
         await adapter_manager_1.adapterManager.notifyDocumentEdited(doc.uri.fsPath, doc.getText());
         await adapter_manager_1.adapterManager.reloadProject();
     }));
+    // 7. Clean macOS Workspace Startup: collapse noisy bottom panel & ensure Live Simulator is ready
+    setTimeout(async () => {
+        try {
+            await vscode.commands.executeCommand("workbench.action.closePanel");
+        }
+        catch {
+            // Ignore if panel already closed
+        }
+        if (vscode.workspace.workspaceFolders?.length) {
+            if (!previewProvider.hasActivePanel()) {
+                await previewProvider.openAsPanel(context.extensionUri);
+            }
+            updateStatusBar(true);
+        }
+    }, 300);
 }
 function updateStatusBar(isRunning) {
     if (isRunning) {
