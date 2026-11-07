@@ -337,6 +337,15 @@
   align-items: center !important;
 }
 
+/* Hide legacy raw terminal & debug tabs so Terminal Chat is the primary bottom panel experience */
+.monaco-workbench .part.panel .composite-bar .monaco-action-bar .action-item:has([aria-label*="Problèmes"]),
+.monaco-workbench .part.panel .composite-bar .monaco-action-bar .action-item:has([aria-label*="Sortie"]),
+.monaco-workbench .part.panel .composite-bar .monaco-action-bar .action-item:has([aria-label*="Console"]),
+.monaco-workbench .part.panel .composite-bar .monaco-action-bar .action-item:has([aria-label*="Ports"]),
+.monaco-workbench .part.panel .composite-bar .monaco-action-bar .action-item:has([aria-label^="Terminal ("]) {
+  display: none !important;
+}
+
 .monaco-workbench .part.panel .composite-bar .monaco-action-bar .action-item .action-label {
   text-transform: capitalize !important;
   font-size: 11.5px !important;

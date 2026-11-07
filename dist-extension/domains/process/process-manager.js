@@ -58,6 +58,37 @@ class ExtensionProcessManager {
             });
         });
     }
+    /**
+     * Checks if a TCP port is currently accepting connections.
+     */
+    isPortListening(port, host = "127.0.0.1") {
+        return new Promise((resolve) => {
+            const socket = new net.Socket();
+            const onDone = (ok) => {
+                socket.removeAllListeners();
+                socket.destroy();
+                resolve(ok);
+            };
+            socket.setTimeout(350);
+            socket.once("connect", () => onDone(true));
+            socket.once("timeout", () => onDone(false));
+            socket.once("error", () => onDone(false));
+            socket.connect(port, host);
+        });
+    }
+    /**
+     * Polls a TCP port until the dev server is actively listening.
+     */
+    async waitForPortReady(port, host = "127.0.0.1", timeoutMs = 15000) {
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+            if (await this.isPortListening(port, host)) {
+                return true;
+            }
+            await new Promise((r) => setTimeout(r, 120));
+        }
+        return false;
+    }
     startProcess(options) {
         this.stopProcess(options.id);
         const child = (0, child_process_1.spawn)(options.command, options.args, {

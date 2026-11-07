@@ -137,6 +137,9 @@ export class DevicePreviewViewProvider
       case "setProfile":
         this.setProfile(msg.value);
         break;
+      case "setCustomUrl":
+        this.setCustomUrl(msg.value);
+        break;
       case "toggleOrientation":
         this.toggleOrientation();
         break;
@@ -182,6 +185,22 @@ export class DevicePreviewViewProvider
       this.selectedProfile = found;
       this.refreshWebviews();
     }
+  }
+
+  setCustomUrl(rawUrl: string): void {
+    const trimmed = String(rawUrl || "").trim();
+    if (!trimmed) return;
+    let formatted = trimmed;
+    if (/^\d+$/.test(trimmed)) {
+      formatted = `http://localhost:${trimmed}`;
+    } else if (trimmed.startsWith(":")) {
+      formatted = `http://localhost${trimmed}`;
+    } else if (!/^https?:\/\//i.test(trimmed)) {
+      formatted = `http://${trimmed}`;
+    }
+    this.previewUrl = formatted;
+    this.status = "running";
+    this.refreshWebviews();
   }
 
   toggleOrientation(): void {

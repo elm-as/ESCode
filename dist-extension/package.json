@@ -16,13 +16,6 @@
   ],
   "contributes": {
     "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "elmas-studio-container",
-          "title": "Elmas Studio",
-          "icon": "media/device-icon.svg"
-        }
-      ],
       "panel": [
         {
           "id": "elmas-terminal-chat-panel",
@@ -32,13 +25,6 @@
       ]
     },
     "views": {
-      "elmas-studio-container": [
-        {
-          "type": "webview",
-          "id": "elmasStudio.devicePreview",
-          "name": "Appareil Mobile Virtuel"
-        }
-      ],
       "elmas-terminal-chat-panel": [
         {
           "type": "webview",

@@ -50,8 +50,17 @@ export class ReactWebAdapter implements IFrameworkAdapter {
     const processId = `react_web_${Date.now()}`;
     this.activeProcessId = processId;
 
-    const command = "npx";
-    const args = ["vite", "--port", String(options.port), "--host", "127.0.0.1", "--strictPort"];
+    const localViteBin = path.join(
+      options.projectPath,
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "vite.cmd" : "vite"
+    );
+    const hasLocalVite = fs.existsSync(localViteBin);
+    const command = hasLocalVite ? `"${localViteBin}"` : "npx";
+    const args = hasLocalVite
+      ? ["--port", String(options.port), "--host", "127.0.0.1", "--strictPort"]
+      : ["vite", "--port", String(options.port), "--host", "127.0.0.1", "--strictPort"];
 
     try {
       processManager.startProcess({
@@ -61,12 +70,18 @@ export class ReactWebAdapter implements IFrameworkAdapter {
         cwd: options.projectPath,
       });
 
-      const previewUrl = `http://127.0.0.1:${options.port}`;
-      this.currentStatus = { state: "running", mode: options.mode, port: options.port };
+      const isReady = await processManager.waitForPortReady(options.port, "127.0.0.1", 12000);
+      let finalPort = options.port;
+      if (!isReady && (await processManager.isPortListening(5173, "127.0.0.1"))) {
+        finalPort = 5173;
+      }
+
+      const previewUrl = `http://127.0.0.1:${finalPort}`;
+      this.currentStatus = { state: "running", mode: options.mode, port: finalPort };
 
       return {
         previewUrl,
-        port: options.port,
+        port: finalPort,
         processId,
       };
     } catch (err: unknown) {

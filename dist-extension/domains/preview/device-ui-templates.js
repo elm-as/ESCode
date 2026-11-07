@@ -24,7 +24,14 @@ function renderTopBar(options) {
 
     <div class="nav-center">
       <div class="address-pill">
-        <span class="path-text">${displayUrl}</span>
+        <input
+          class="path-input"
+          type="text"
+          value="${displayUrl}"
+          placeholder="http://localhost:5173 ou port..."
+          title="Saisir une URL ou un port (ex: 5173) puis appuyer sur Entrée"
+          onkeydown="if(event.key==='Enter'){sendMsg('setCustomUrl', this.value);}"
+        />
       </div>
     </div>
 

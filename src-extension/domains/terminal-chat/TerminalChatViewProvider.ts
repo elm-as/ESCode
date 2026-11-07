@@ -127,3 +127,4 @@ export class TerminalChatViewProvider implements vscode.WebviewViewProvider {
     });
   }
 }
+

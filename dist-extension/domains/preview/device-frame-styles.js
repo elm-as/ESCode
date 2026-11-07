@@ -97,12 +97,18 @@ function getDeviceFrameStyles(width, height) {
       overflow: hidden;
       white-space: nowrap;
     }
-    .address-pill .path-text {
+    .address-pill .path-text,
+    .address-pill .path-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
       color: #d4d4d8;
       font-family: "SF Mono", "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
       font-size: 11px;
       overflow: hidden;
       text-overflow: ellipsis;
+      user-select: text;
     }
 
     /* macOS Segmented Pill Buttons */

@@ -298,3 +298,4 @@ export function renderTerminalChatHtml(projectName: string, initialMessages: Cha
 </body>
 </html>`;
 }
+
