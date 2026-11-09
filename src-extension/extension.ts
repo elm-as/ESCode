@@ -139,6 +139,10 @@ export function activate(context: vscode.ExtensionContext): void {
   // 8. Activate Conversational Terminal Chat in bottom panel & ensure Live Simulator is ready
   setTimeout(async () => {
     try {
+      const wbConfig = vscode.workspace.getConfiguration("workbench");
+      if (wbConfig.get<string>("iconTheme") !== "elmas-macos-sequoia-icons") {
+        await wbConfig.update("iconTheme", "elmas-macos-sequoia-icons", vscode.ConfigurationTarget.Global);
+      }
       await vscode.commands.executeCommand("elmasStudio.terminalChat.focus");
     } catch {
       // Ignore if view not ready yet

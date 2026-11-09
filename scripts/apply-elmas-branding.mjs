@@ -173,7 +173,7 @@ if (fs.existsSync(extRoot)) {
 // 4. Apply Elmas Amber Forge + macOS Sequoia Bento Architecture in settings.json
 const settings = {
   "workbench.colorTheme": "Default Dark Modern",
-  "workbench.iconTheme": "elmas-macos-icons",
+  "workbench.iconTheme": "elmas-macos-sequoia-icons",
   "workbench.activityBar.location": "top",
   "window.menuBarVisibility": "compact",
   "breadcrumbs.enabled": false,

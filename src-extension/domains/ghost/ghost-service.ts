@@ -61,3 +61,4 @@ export function disposeGhostDomain(): void {
   activeWorkflow?.dispose();
   Logger.getInstance().dispose();
 }
+
