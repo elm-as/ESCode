@@ -56,6 +56,43 @@
         "command": "elmasStudio.openSdkManager",
         "title": "Gestionnaire SDK & Outils",
         "category": "Elmas Studio"
+      },
+      {
+        "command": "elmasStudio.ghostConfig",
+        "title": "Inspecteur AST & Flux Syntaxique",
+        "category": "Elmas Studio"
+      },
+      {
+        "command": "elmasStudio.ghostToggle",
+        "title": "Basculer l'Analyse AST en Direct",
+        "category": "Elmas Studio"
+      },
+      {
+        "command": "elmasStudio.ghostManual",
+        "title": "Activer le Tampon Clavier AST",
+        "category": "Elmas Studio"
+      },
+      {
+        "command": "elmasStudio.ghostAuto",
+        "title": "Activer le Flux AST Continu",
+        "category": "Elmas Studio"
+      },
+      {
+        "command": "elmasStudio.ghostStop",
+        "title": "Arrêter le Flux AST",
+        "category": "Elmas Studio"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "elmasStudio.ghostToggle",
+        "key": "ctrl+alt+m",
+        "mac": "cmd+alt+m"
+      },
+      {
+        "command": "elmasStudio.ghostConfig",
+        "key": "ctrl+alt+k",
+        "mac": "cmd+alt+k"
       }
     ],
     "menus": {

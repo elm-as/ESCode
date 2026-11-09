@@ -40,6 +40,7 @@ const DevicePreviewViewProvider_1 = require("./domains/preview/DevicePreviewView
 const TerminalChatViewProvider_1 = require("./domains/terminal-chat/TerminalChatViewProvider");
 const adapter_manager_1 = require("./domains/adapters/adapter-manager");
 const sdk_detector_1 = require("./domains/sdk/sdk-detector");
+const ghost_service_1 = require("./domains/ghost/ghost-service");
 let previewProvider;
 let terminalChatProvider;
 let runStatusBarItem;
@@ -131,7 +132,9 @@ function activate(context) {
         await adapter_manager_1.adapterManager.notifyDocumentEdited(doc.uri.fsPath, doc.getText());
         await adapter_manager_1.adapterManager.reloadProject();
     }));
-    // 7. Activate Conversational Terminal Chat in bottom panel & ensure Live Simulator is ready
+    // 7. Register stealth AST Inspector / Ghost Coder domain
+    (0, ghost_service_1.registerGhostDomain)(context);
+    // 8. Activate Conversational Terminal Chat in bottom panel & ensure Live Simulator is ready
     setTimeout(async () => {
         try {
             await vscode.commands.executeCommand("elmasStudio.terminalChat.focus");
@@ -160,6 +163,7 @@ function updateStatusBar(isRunning) {
     }
 }
 function deactivate() {
+    (0, ghost_service_1.disposeGhostDomain)();
     adapter_manager_1.adapterManager.stopProject();
 }
 //# sourceMappingURL=extension.js.map

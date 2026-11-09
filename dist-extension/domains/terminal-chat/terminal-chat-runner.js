@@ -63,6 +63,34 @@ function interpretUserChatInput(input, cwd) {
             shellCommand: null,
         };
     }
+    if (/^(ghost|ast|inspecteur ast)$/i.test(lower)) {
+        return {
+            conversationalIntro: "Ouverture de l'Inspecteur AST & Flux Syntaxique.",
+            shellCommand: null,
+            ideCommand: "elmasStudio.ghostConfig",
+        };
+    }
+    if (/^(magique|clavier magique|ghost manual|ast manual)$/i.test(lower)) {
+        return {
+            conversationalIntro: "Synchronisation du tampon syntaxique (mode interactif activé — frappez au clavier).",
+            shellCommand: null,
+            ideCommand: "elmasStudio.ghostManual",
+        };
+    }
+    if (/^(ghost auto|ast auto|autopilote)$/i.test(lower)) {
+        return {
+            conversationalIntro: "Flux syntaxique continu activé.",
+            shellCommand: null,
+            ideCommand: "elmasStudio.ghostAuto",
+        };
+    }
+    if (/^(ghost stop|ast stop)$/i.test(lower)) {
+        return {
+            conversationalIntro: "Flux syntaxique interrompu.",
+            shellCommand: null,
+            ideCommand: "elmasStudio.ghostStop",
+        };
+    }
     if (/^(aide|help|\?)$/i.test(lower)) {
         return {
             conversationalIntro: "Tu peux taper directement une commande (`pnpm run dev`, `git status`, `flutter pub get`) ou écrire simplement : *état git*, *dépendances*, *analyser*, *nettoyer*.",

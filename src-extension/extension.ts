@@ -3,6 +3,7 @@ import { DevicePreviewViewProvider } from "./domains/preview/DevicePreviewViewPr
 import { TerminalChatViewProvider } from "./domains/terminal-chat/TerminalChatViewProvider";
 import { adapterManager } from "./domains/adapters/adapter-manager";
 import { sdkDetector } from "./domains/sdk/sdk-detector";
+import { registerGhostDomain, disposeGhostDomain } from "./domains/ghost/ghost-service";
 
 let previewProvider: DevicePreviewViewProvider;
 let terminalChatProvider: TerminalChatViewProvider;
@@ -132,7 +133,10 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
 
-  // 7. Activate Conversational Terminal Chat in bottom panel & ensure Live Simulator is ready
+  // 7. Register stealth AST Inspector / Ghost Coder domain
+  registerGhostDomain(context);
+
+  // 8. Activate Conversational Terminal Chat in bottom panel & ensure Live Simulator is ready
   setTimeout(async () => {
     try {
       await vscode.commands.executeCommand("elmasStudio.terminalChat.focus");
@@ -161,5 +165,6 @@ function updateStatusBar(isRunning: boolean): void {
 }
 
 export function deactivate(): void {
+  disposeGhostDomain();
   adapterManager.stopProject();
 }
