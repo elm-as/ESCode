@@ -133,3 +133,4 @@ export function renderPolyglotPreviewHtml(
 function escapeHtml(raw: string): string {
   return raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+

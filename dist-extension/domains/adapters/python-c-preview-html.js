@@ -155,9 +155,26 @@ function renderPythonCPreviewHtml(scripts, activeRelPath, activeKind) {
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space') { e.preventDefault(); sendKey('SPACE'); }
       else if (e.key === 'p' || e.key === 'P') { sendKey('p'); }
+      else if (e.key === 'r' || e.key === 'R') { sendKey('r'); }
+    });
+
+    imgEl.addEventListener('click', (e) => {
+      const rect = imgEl.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        const x = Math.round(((e.clientX - rect.left) / rect.width) * 720);
+        const y = Math.round(((e.clientY - rect.top) / rect.height) * 1280);
+        fetch('/__elmas_click?x=' + x + '&y=' + y, { method: 'POST' }).catch(() => {});
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && currentKind === 'pygame' && !frameActive) {
+        pollPygameFrame();
+      }
     });
 
     function pollPygameFrame() {
+      if (document.hidden) return;
       if (currentKind !== 'pygame' || frameActive) return;
       frameActive = true;
       const nextImg = new Image();
@@ -187,6 +204,11 @@ function renderPythonCPreviewHtml(scripts, activeRelPath, activeKind) {
           ansiEl.innerHTML = msg.html;
         } else if (msg.type === 'status') {
           pillEl.textContent = msg.text;
+        } else if (msg.type === 'error') {
+          if (!imgEl.src) {
+            ansiEl.style.display = 'block';
+            ansiEl.innerHTML = '<span style="color:#ef4444">Erreur :\\n' + msg.text + '</span>';
+          }
         }
       };
     } catch {}

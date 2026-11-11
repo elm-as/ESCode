@@ -39,6 +39,7 @@ const path = __importStar(require("path"));
 const vscode = __importStar(require("vscode"));
 const python_c_preview_html_1 = require("./python-c-preview-html");
 const python_c_runner_1 = require("./python-c-runner");
+const process_manager_1 = require("../process/process-manager");
 class PythonCVisualAdapter {
     name = "Python (Pygame / CLI) & C (ANSI / 9:16)";
     framework = "python_c_visual";
@@ -146,10 +147,7 @@ class PythonCVisualAdapter {
     }
     killActiveChild() {
         if (this.activeChild) {
-            try {
-                this.activeChild.kill();
-            }
-            catch { }
+            (0, process_manager_1.killProcessTree)(this.activeChild);
             this.activeChild = null;
         }
     }
@@ -161,7 +159,8 @@ class PythonCVisualAdapter {
             this.activeChild = (0, python_c_runner_1.spawnPygameStream)(entry.fullPath, (jpeg) => {
                 this.latestJpegFrame = jpeg;
             }, (errText) => {
-                this.broadcastEvent({ type: "status", text: errText.slice(0, 60) });
+                this.broadcastEvent({ type: "status", text: errText.slice(0, 80) });
+                this.broadcastEvent({ type: "error", text: errText });
             });
         }
         else {
@@ -226,6 +225,17 @@ class PythonCVisualAdapter {
             const k = parsed.searchParams.get("key") || "SPACE";
             try {
                 this.activeChild?.stdin?.write(`KEY:${k}\n`);
+            }
+            catch { }
+            res.writeHead(200);
+            res.end("ok");
+            return;
+        }
+        if (parsed.pathname === "/__elmas_click" && req.method === "POST") {
+            const x = parsed.searchParams.get("x") || "0";
+            const y = parsed.searchParams.get("y") || "0";
+            try {
+                this.activeChild?.stdin?.write(`CLICK:${x},${y}\n`);
             }
             catch { }
             res.writeHead(200);

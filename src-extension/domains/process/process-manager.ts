@@ -137,4 +137,17 @@ export class ExtensionProcessManager {
   }
 }
 
+export function killProcessTree(child?: ChildProcess | null): void {
+  if (!child || !child.pid) return;
+  if (process.platform === "win32") {
+    exec(`taskkill /F /T /PID ${child.pid}`, () => {});
+  } else {
+    try {
+      process.kill(-child.pid, "SIGKILL");
+    } catch {
+      try { child.kill("SIGKILL"); } catch {}
+    }
+  }
+}
+
 export const processManager = new ExtensionProcessManager();

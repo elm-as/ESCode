@@ -112,3 +112,4 @@ export function formatHtmlForMobile(rawHtml: string): string {
 </body>
 </html>`;
 }
+

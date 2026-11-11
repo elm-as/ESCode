@@ -177,6 +177,14 @@ export function activate(context: vscode.ExtensionContext): void {
   // 7. Register stealth AST Inspector / Ghost Coder domain
   registerGhostDomain(context);
 
+  // 8. Cleanly stop any running simulation when closing or changing workspace
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(async () => {
+      await adapterManager.stopProject();
+      updateStatusBar(false);
+    })
+  );
+
   // 8. Activate Conversational Terminal Chat in bottom panel & select Simulator in Right Sidebar
   setTimeout(async () => {
     try {

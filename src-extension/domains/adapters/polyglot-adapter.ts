@@ -14,7 +14,7 @@ import {
   ResolvedPolyglotTarget,
 } from "./polyglot-manifest";
 import { renderPolyglotPreviewHtml } from "./polyglot-preview-html";
-import { processManager } from "../process/process-manager";
+import { processManager, killProcessTree } from "../process/process-manager";
 
 export class PolyglotUniversalAdapter implements IFrameworkAdapter {
   readonly name = "Polyglot Universal Runner (Rust/Go/Zig/Custom)";
@@ -67,7 +67,7 @@ export class PolyglotUniversalAdapter implements IFrameworkAdapter {
 
   async stop(): Promise<void> {
     if (this.activeChild) {
-      try { this.activeChild.kill(); } catch {}
+      killProcessTree(this.activeChild);
       this.activeChild = null;
     }
     for (const c of this.sseClients) {
@@ -205,3 +205,4 @@ export class PolyglotUniversalAdapter implements IFrameworkAdapter {
 function escapeHtml(raw: string): string {
   return raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+

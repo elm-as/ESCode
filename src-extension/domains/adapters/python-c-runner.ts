@@ -144,6 +144,17 @@ def _stdin_reader():
             pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE, unicode=' '))
         elif cmd == 'KEY:p':
             pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p, unicode='p'))
+        elif cmd == 'KEY:r':
+            pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_r, unicode='r'))
+        elif cmd.startswith('CLICK:'):
+            parts = cmd.split(':')[1].split(',')
+            if len(parts) == 2:
+                try:
+                    px, py = int(float(parts[0])), int(float(parts[1]))
+                    pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(px, py), button=1))
+                    pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONUP, pos=(px, py), button=1))
+                except Exception:
+                    pass
 
 threading.Thread(target=_stdin_reader, daemon=True).start()
 with open(script_path, 'r', encoding='utf-8') as f:
@@ -176,6 +187,10 @@ export function spawnPygameStream(
 
   child.stdout?.on("data", (chunk: Buffer) => {
     acc = Buffer.concat([acc, chunk]);
+    if (acc.length > 5 * 1024 * 1024) {
+      acc = Buffer.alloc(0);
+      return;
+    }
     while (true) {
       const idx = acc.indexOf(marker);
       if (idx === -1 || acc.length < idx + 12) {

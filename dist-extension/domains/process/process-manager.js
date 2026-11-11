@@ -34,6 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.processManager = exports.ExtensionProcessManager = void 0;
+exports.killProcessTree = killProcessTree;
 const net = __importStar(require("net"));
 const child_process_1 = require("child_process");
 class ExtensionProcessManager {
@@ -155,5 +156,23 @@ class ExtensionProcessManager {
     }
 }
 exports.ExtensionProcessManager = ExtensionProcessManager;
+function killProcessTree(child) {
+    if (!child || !child.pid)
+        return;
+    if (process.platform === "win32") {
+        (0, child_process_1.exec)(`taskkill /F /T /PID ${child.pid}`, () => { });
+    }
+    else {
+        try {
+            process.kill(-child.pid, "SIGKILL");
+        }
+        catch {
+            try {
+                child.kill("SIGKILL");
+            }
+            catch { }
+        }
+    }
+}
 exports.processManager = new ExtensionProcessManager();
 //# sourceMappingURL=process-manager.js.map

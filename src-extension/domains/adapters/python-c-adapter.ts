@@ -16,6 +16,7 @@ import {
   spawnAnsiStream,
   spawnPygameStream,
 } from "./python-c-runner";
+import { killProcessTree } from "../process/process-manager";
 
 export class PythonCVisualAdapter implements IFrameworkAdapter {
   readonly name = "Python (Pygame / CLI) & C (ANSI / 9:16)";
@@ -139,9 +140,7 @@ export class PythonCVisualAdapter implements IFrameworkAdapter {
 
   private killActiveChild(): void {
     if (this.activeChild) {
-      try {
-        this.activeChild.kill();
-      } catch {}
+      killProcessTree(this.activeChild);
       this.activeChild = null;
     }
   }
@@ -158,7 +157,8 @@ export class PythonCVisualAdapter implements IFrameworkAdapter {
           this.latestJpegFrame = jpeg;
         },
         (errText) => {
-          this.broadcastEvent({ type: "status", text: errText.slice(0, 60) });
+          this.broadcastEvent({ type: "status", text: errText.slice(0, 80) });
+          this.broadcastEvent({ type: "error", text: errText });
         }
       );
     } else {
@@ -228,6 +228,17 @@ export class PythonCVisualAdapter implements IFrameworkAdapter {
       const k = parsed.searchParams.get("key") || "SPACE";
       try {
         this.activeChild?.stdin?.write(`KEY:${k}\n`);
+      } catch {}
+      res.writeHead(200);
+      res.end("ok");
+      return;
+    }
+
+    if (parsed.pathname === "/__elmas_click" && req.method === "POST") {
+      const x = parsed.searchParams.get("x") || "0";
+      const y = parsed.searchParams.get("y") || "0";
+      try {
+        this.activeChild?.stdin?.write(`CLICK:${x},${y}\n`);
       } catch {}
       res.writeHead(200);
       res.end("ok");

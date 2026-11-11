@@ -99,3 +99,4 @@ function resolveGoTarget(projectPath: string): ResolvedPolyglotTarget {
     interactiveKeys: ["SPACE", "r", "q"],
   };
 }
+

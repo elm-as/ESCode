@@ -83,10 +83,7 @@ class PolyglotUniversalAdapter {
     }
     async stop() {
         if (this.activeChild) {
-            try {
-                this.activeChild.kill();
-            }
-            catch { }
+            (0, process_manager_1.killProcessTree)(this.activeChild);
             this.activeChild = null;
         }
         for (const c of this.sseClients) {
