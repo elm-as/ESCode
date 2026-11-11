@@ -62,6 +62,9 @@ if (-not (Test-Path $extDir)) {
 }
 Copy-Item -Path "src-extension\package.json" -Destination $extDir -Force
 Copy-Item -Path "dist-extension\*" -Destination $extDir -Recurse -Force
+if (Test-Path "src-extension\media") {
+  Copy-Item -Path "src-extension\media" -Destination $extDir -Recurse -Force
+}
 if (Test-Path "target\debug\tauri-app.exe") {
   $binDest = Join-Path $extDir "bin"
   New-Item -ItemType Directory -Force -Path $binDest | Out-Null

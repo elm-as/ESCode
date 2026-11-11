@@ -185,7 +185,7 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
 
-  // 8. Activate Conversational Terminal Chat in bottom panel & select Simulator in Right Sidebar
+  // 8. Activer le Terminal Chat en bas et afficher le Simulateur dans le panneau latéral droit
   setTimeout(async () => {
     try {
       const wbConfig = vscode.workspace.getConfiguration("workbench");
@@ -193,11 +193,11 @@ export function activate(context: vscode.ExtensionContext): void {
         await wbConfig.update("iconTheme", "elmas-macos-sequoia-icons", vscode.ConfigurationTarget.Global);
       }
       await vscode.commands.executeCommand("elmasStudio.terminalChat.focus");
-      await vscode.commands.executeCommand("workbench.view.extension.elmas-studio-right-simulator");
+      await vscode.commands.executeCommand("elmasStudio.devicePreview.focus");
     } catch {
-      // Ignore if view not ready yet
+      // Ignorer si la vue n'est pas encore prête
     }
-  }, 300);
+  }, 400);
 }
 
 function updateStatusBar(isRunning: boolean): void {
