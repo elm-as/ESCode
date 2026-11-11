@@ -35,15 +35,12 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DevicePreviewViewProvider = void 0;
 const vscode = __importStar(require("vscode"));
-const path = __importStar(require("path"));
-const fs = __importStar(require("fs"));
 const device_profiles_1 = require("./device-profiles");
 const get_device_html_1 = require("./get-device-html");
 const adapter_manager_1 = require("../adapters/adapter-manager");
 class DevicePreviewViewProvider {
     static viewType = "elmasStudio.devicePreview";
     currentView;
-    currentPanel;
     selectedProfile = device_profiles_1.STANDARD_PROFILES[0];
     orientation = "portrait";
     mode = "fast";
@@ -52,81 +49,40 @@ class DevicePreviewViewProvider {
     errorMessage;
     zoom = 0.85;
     hasActivePanel() {
-        return Boolean(this.currentPanel || this.currentView);
+        return Boolean(this.currentView);
     }
     resolveWebviewView(webviewView, _context, _token) {
         this.currentView = webviewView;
         webviewView.webview.options = { enableScripts: true };
+        webviewView.onDidDispose(() => {
+            this.currentView = undefined;
+        });
         webviewView.webview.onDidReceiveMessage((msg) => this.handleMessage(msg));
         this.updateWebview(webviewView.webview);
+        if (this.status === "idle" && vscode.workspace.workspaceFolders?.length) {
+            void this.runCurrentProject();
+        }
     }
+    /**
+     * Si un ancien onglet d'éditeur persisté d'une session précédente tente de se rouvrir,
+     * on le ferme immédiatement : le simulateur vit exclusivement dans le panneau latéral droit.
+     */
     async deserializeWebviewPanel(webviewPanel, _state) {
-        this.currentPanel = webviewPanel;
-        webviewPanel.title = "Aperçu Mobile";
-        webviewPanel.webview.options = { enableScripts: true };
-        webviewPanel.onDidDispose(() => {
-            this.currentPanel = undefined;
-        });
-        webviewPanel.webview.onDidReceiveMessage((msg) => this.handleMessage(msg));
-        this.updateWebview(webviewPanel.webview);
-        if (this.status === "idle") {
-            await this.runCurrentProject();
-        }
+        webviewPanel.dispose();
+        await this.openAsPanel(vscode.Uri.file(""));
     }
+    /**
+     * Affiche le simulateur uniquement dans le panneau latéral secondaire droit (Secondary Side Bar).
+     */
     async openAsPanel(_extensionUri) {
-        if (this.currentPanel) {
-            this.currentPanel.reveal(vscode.ViewColumn.Two);
-            if (this.status === "idle") {
-                await this.runCurrentProject();
-            }
-            return;
+        try {
+            await vscode.commands.executeCommand("elmasStudio.devicePreview.focus");
         }
-        await this.ensureCodeEditorInLeftColumn();
-        this.currentPanel = vscode.window.createWebviewPanel("elmasStudio.devicePreviewPanel", "Aperçu Mobile", vscode.ViewColumn.Two, { enableScripts: true, retainContextWhenHidden: true });
-        this.currentPanel.onDidDispose(() => {
-            this.currentPanel = undefined;
-        });
-        this.currentPanel.webview.onDidReceiveMessage((msg) => this.handleMessage(msg));
-        this.updateWebview(this.currentPanel.webview);
-        if (this.status === "idle") {
+        catch {
+            // Ignorer si la vue est en cours d'initialisation
+        }
+        if (this.status === "idle" && vscode.workspace.workspaceFolders?.length) {
             await this.runCurrentProject();
-        }
-    }
-    async ensureCodeEditorInLeftColumn() {
-        const openEditors = vscode.window.visibleTextEditors;
-        if (openEditors.some((ed) => ed.viewColumn === vscode.ViewColumn.One)) {
-            return;
-        }
-        const folders = vscode.workspace.workspaceFolders;
-        if (!folders || folders.length === 0) {
-            return;
-        }
-        const rootPath = folders[0].uri.fsPath;
-        const candidates = [
-            "src/App.tsx",
-            "src/App.jsx",
-            "src/main.tsx",
-            "src/main.jsx",
-            "lib/main.dart",
-            "src/main/kotlin/Main.kt",
-            "index.html",
-            "package.json",
-        ];
-        for (const relPath of candidates) {
-            const fullPath = path.join(rootPath, relPath);
-            if (fs.existsSync(fullPath)) {
-                try {
-                    const doc = await vscode.workspace.openTextDocument(fullPath);
-                    await vscode.window.showTextDocument(doc, {
-                        viewColumn: vscode.ViewColumn.One,
-                        preview: false,
-                    });
-                    return;
-                }
-                catch {
-                    // Continue scanning next candidate
-                }
-            }
         }
     }
     handleMessage(msg) {
@@ -135,29 +91,29 @@ class DevicePreviewViewProvider {
                 this.setMode(msg.value);
                 break;
             case "setProfile":
-                this.setProfile(msg.value);
+                this.setProfile(String(msg.value ?? ""));
                 break;
             case "setCustomUrl":
-                this.setCustomUrl(msg.value);
+                this.setCustomUrl(String(msg.value ?? ""));
                 break;
             case "toggleOrientation":
                 this.toggleOrientation();
                 break;
             case "runProject":
-                this.runCurrentProject();
+                void this.runCurrentProject();
                 break;
             case "stopProject":
-                this.stopCurrentProject();
+                void this.stopCurrentProject();
                 break;
             case "reload":
                 adapter_manager_1.adapterManager.reloadProject();
                 this.reloadFrameOnly();
                 break;
             case "openLogs":
-                vscode.commands.executeCommand("elmasStudio.terminalChat.focus");
+                void vscode.commands.executeCommand("elmasStudio.terminalChat.focus");
                 break;
             case "openSdkManager":
-                vscode.commands.executeCommand("elmasStudio.openSdkManager");
+                void vscode.commands.executeCommand("elmasStudio.openSdkManager");
                 break;
             case "screenshot":
                 vscode.window.showInformationMessage("Elmas Studio : Capture d'écran mobile enregistrée.");
@@ -166,10 +122,7 @@ class DevicePreviewViewProvider {
     }
     reloadFrameOnly() {
         if (this.currentView) {
-            this.currentView.webview.postMessage({ type: "reloadFrame" });
-        }
-        if (this.currentPanel) {
-            this.currentPanel.webview.postMessage({ type: "reloadFrame" });
+            void this.currentView.webview.postMessage({ type: "reloadFrame" });
         }
     }
     setMode(mode) {
@@ -211,9 +164,13 @@ class DevicePreviewViewProvider {
             vscode.window.showErrorMessage("Veuillez d'abord ouvrir un dossier de projet dans Elmas Studio.");
             return;
         }
-        if (!this.currentPanel && !this.currentView) {
-            await this.openAsPanel(vscode.Uri.file(""));
-            return;
+        if (!this.currentView) {
+            try {
+                await vscode.commands.executeCommand("elmasStudio.devicePreview.focus");
+            }
+            catch {
+                // Ignorer
+            }
         }
         const rootPath = workspaceFolders[0].uri.fsPath;
         this.status = "starting";
@@ -242,9 +199,6 @@ class DevicePreviewViewProvider {
     refreshWebviews() {
         if (this.currentView) {
             this.updateWebview(this.currentView.webview);
-        }
-        if (this.currentPanel) {
-            this.updateWebview(this.currentPanel.webview);
         }
     }
     updateWebview(webview) {

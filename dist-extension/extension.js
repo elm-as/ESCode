@@ -77,7 +77,7 @@ function activate(context) {
     previewProvider = new DevicePreviewViewProvider_1.DevicePreviewViewProvider();
     terminalChatProvider = new TerminalChatViewProvider_1.TerminalChatViewProvider();
     // 1. Register Webview View & Panel Serializer (restores panel on reload)
-    context.subscriptions.push(vscode.window.registerWebviewViewProvider(DevicePreviewViewProvider_1.DevicePreviewViewProvider.viewType, previewProvider), vscode.window.registerWebviewViewProvider(TerminalChatViewProvider_1.TerminalChatViewProvider.viewType, terminalChatProvider, { webviewOptions: { retainContextWhenHidden: true } }), vscode.window.registerWebviewPanelSerializer("elmasStudio.devicePreviewPanel", previewProvider));
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider(DevicePreviewViewProvider_1.DevicePreviewViewProvider.viewType, previewProvider, { webviewOptions: { retainContextWhenHidden: true } }), vscode.window.registerWebviewViewProvider(TerminalChatViewProvider_1.TerminalChatViewProvider.viewType, terminalChatProvider, { webviewOptions: { retainContextWhenHidden: true } }), vscode.window.registerWebviewPanelSerializer("elmasStudio.devicePreviewPanel", previewProvider));
     // 2. Register Commands
     context.subscriptions.push(vscode.commands.registerCommand("elmasStudio.openMissionControl", async () => {
         launchStandaloneMissionControl(context.extensionPath);
@@ -167,7 +167,7 @@ function activate(context) {
     }));
     // 7. Register stealth AST Inspector / Ghost Coder domain
     (0, ghost_service_1.registerGhostDomain)(context);
-    // 8. Activate Conversational Terminal Chat in bottom panel & ensure Live Simulator is ready
+    // 8. Activate Conversational Terminal Chat in bottom panel & select Simulator in Right Sidebar
     setTimeout(async () => {
         try {
             const wbConfig = vscode.workspace.getConfiguration("workbench");
@@ -175,15 +175,10 @@ function activate(context) {
                 await wbConfig.update("iconTheme", "elmas-macos-sequoia-icons", vscode.ConfigurationTarget.Global);
             }
             await vscode.commands.executeCommand("elmasStudio.terminalChat.focus");
+            await vscode.commands.executeCommand("workbench.view.extension.elmas-studio-right-simulator");
         }
         catch {
             // Ignore if view not ready yet
-        }
-        if (!previewProvider.hasActivePanel()) {
-            await previewProvider.openAsPanel(context.extensionUri);
-        }
-        if (vscode.workspace.workspaceFolders?.length) {
-            updateStatusBar(true);
         }
     }, 300);
 }

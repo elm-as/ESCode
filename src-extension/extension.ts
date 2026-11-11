@@ -51,7 +51,8 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       DevicePreviewViewProvider.viewType,
-      previewProvider
+      previewProvider,
+      { webviewOptions: { retainContextWhenHidden: true } }
     ),
     vscode.window.registerWebviewViewProvider(
       TerminalChatViewProvider.viewType,
@@ -176,7 +177,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // 7. Register stealth AST Inspector / Ghost Coder domain
   registerGhostDomain(context);
 
-  // 8. Activate Conversational Terminal Chat in bottom panel & ensure Live Simulator is ready
+  // 8. Activate Conversational Terminal Chat in bottom panel & select Simulator in Right Sidebar
   setTimeout(async () => {
     try {
       const wbConfig = vscode.workspace.getConfiguration("workbench");
@@ -184,14 +185,9 @@ export function activate(context: vscode.ExtensionContext): void {
         await wbConfig.update("iconTheme", "elmas-macos-sequoia-icons", vscode.ConfigurationTarget.Global);
       }
       await vscode.commands.executeCommand("elmasStudio.terminalChat.focus");
+      await vscode.commands.executeCommand("workbench.view.extension.elmas-studio-right-simulator");
     } catch {
       // Ignore if view not ready yet
-    }
-    if (!previewProvider.hasActivePanel()) {
-      await previewProvider.openAsPanel(context.extensionUri);
-    }
-    if (vscode.workspace.workspaceFolders?.length) {
-      updateStatusBar(true);
     }
   }, 300);
 }

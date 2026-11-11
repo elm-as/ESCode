@@ -9,24 +9,41 @@
   },
   "main": "./extension.js",
   "activationEvents": [
-    "onStartupFinished"
+    "*",
+    "onStartupFinished",
+    "onView:elmasStudio.devicePreview",
+    "onView:elmasStudio.terminalChat"
   ],
   "contributes": {
     "viewsContainers": {
-      "activitybar": [
+      "secondarySidebar": [
         {
-          "id": "elmas-studio-container",
-          "title": "Elmas Studio",
+          "id": "elmas-studio-right-simulator",
+          "title": "Simulateur Mobile",
           "icon": "media/device-icon.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "elmas-terminal-chat-panel",
+          "title": "Terminal Chat",
+          "icon": "$(comment-discussion)"
         }
       ]
     },
     "views": {
-      "elmas-studio-container": [
+      "elmas-studio-right-simulator": [
         {
           "type": "webview",
           "id": "elmasStudio.devicePreview",
-          "name": "Appareil Mobile Virtuel"
+          "name": "Simulateur Mobile"
+        }
+      ],
+      "elmas-terminal-chat-panel": [
+        {
+          "type": "webview",
+          "id": "elmasStudio.terminalChat",
+          "name": "Terminal Chat"
         }
       ]
     },
@@ -59,27 +76,53 @@
         "command": "elmasStudio.openSdkManager",
         "title": "Gestionnaire SDK & Outils",
         "category": "Elmas Studio"
+      },
+      {
+        "command": "elmasStudio.ghostConfig",
+        "title": "Inspecteur AST & Flux Syntaxique",
+        "category": "Elmas Studio"
+      },
+      {
+        "command": "elmasStudio.ghostToggle",
+        "title": "Basculer l'Analyse AST en Direct",
+        "category": "Elmas Studio"
+      },
+      {
+        "command": "elmasStudio.ghostManual",
+        "title": "Activer le Tampon Clavier AST",
+        "category": "Elmas Studio"
+      },
+      {
+        "command": "elmasStudio.ghostAuto",
+        "title": "Activer le Flux AST Continu",
+        "category": "Elmas Studio"
+      },
+      {
+        "command": "elmasStudio.ghostStop",
+        "title": "Arrêter le Flux AST",
+        "category": "Elmas Studio"
       }
     ],
-    "menus": {
-      "editor/title": [
-        {
-          "command": "elmasStudio.openMissionControl",
-          "group": "navigation"
-        },
-        {
-          "command": "elmasStudio.openPreview",
-          "group": "navigation"
-        }
-      ]
-    },
     "keybindings": [
       {
         "command": "elmasStudio.openMissionControl",
         "key": "ctrl+shift+m",
         "mac": "cmd+shift+m"
+      },
+      {
+        "command": "elmasStudio.ghostToggle",
+        "key": "ctrl+alt+m",
+        "mac": "cmd+alt+m"
+      },
+      {
+        "command": "elmasStudio.ghostConfig",
+        "key": "ctrl+alt+k",
+        "mac": "cmd+alt+k"
       }
     ],
+    "menus": {
+      "editor/title": []
+    },
     "configuration": {
       "title": "Elmas Studio",
       "properties": {
