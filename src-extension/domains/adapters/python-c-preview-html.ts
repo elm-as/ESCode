@@ -218,3 +218,4 @@ function escapeHtml(raw: string): string {
 function escapeAttr(raw: string): string {
   return escapeHtml(raw).replace(/"/g, "&quot;");
 }
+

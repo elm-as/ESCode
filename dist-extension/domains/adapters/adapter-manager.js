@@ -7,6 +7,7 @@ const flutter_adapter_1 = require("./flutter-adapter");
 const kotlin_adapter_1 = require("./kotlin-adapter");
 const vanilla_web_adapter_1 = require("./vanilla-web-adapter");
 const python_c_adapter_1 = require("./python-c-adapter");
+const polyglot_adapter_1 = require("./polyglot-adapter");
 const process_manager_1 = require("../process/process-manager");
 class ExtensionAdapterManager {
     adapters = new Map();
@@ -19,6 +20,7 @@ class ExtensionAdapterManager {
         this.registerAdapter(new kotlin_adapter_1.KotlinComposeAdapter());
         this.registerAdapter(new vanilla_web_adapter_1.VanillaWebAdapter());
         this.registerAdapter(new python_c_adapter_1.PythonCVisualAdapter());
+        this.registerAdapter(new polyglot_adapter_1.PolyglotUniversalAdapter());
     }
     registerAdapter(adapter) {
         this.adapters.set(adapter.framework, adapter);
@@ -37,7 +39,7 @@ class ExtensionAdapterManager {
     async startProject(workspacePath, mode) {
         const framework = await this.detectWorkspaceFramework(workspacePath);
         if (framework === "unknown") {
-            throw new Error("Aucun framework mobile ou projet HTML détecté dans l'espace de travail.");
+            throw new Error("Aucun projet exécutable détecté (HTML, React, Flutter, Compose, Python, C, Rust, Go ou elmas.json).");
         }
         const adapter = this.getAdapter(framework);
         if (!adapter) {

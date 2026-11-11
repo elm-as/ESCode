@@ -250,3 +250,4 @@ export class PythonCVisualAdapter implements IFrameworkAdapter {
     res.end(html);
   }
 }
+

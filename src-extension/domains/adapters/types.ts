@@ -5,7 +5,17 @@ export type SupportedFramework =
   | "flutter"
   | "kotlin_compose"
   | "python_c_visual"
+  | "polyglot_custom"
   | "unknown";
+
+export interface PolyglotConfig {
+  name?: string;
+  command?: string;
+  port?: number;
+  type?: "web" | "ansi" | "stream";
+  watch?: string[];
+  keys?: string[];
+}
 
 export interface AdapterCapabilities {
   supportsFastPreview: boolean;

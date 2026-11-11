@@ -289,3 +289,4 @@ function xterm256ToHex(n: number): string {
   }
   return "#f4f4f5";
 }
+

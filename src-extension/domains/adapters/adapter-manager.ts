@@ -9,6 +9,7 @@ import { FlutterAdapter } from "./flutter-adapter";
 import { KotlinComposeAdapter } from "./kotlin-adapter";
 import { VanillaWebAdapter } from "./vanilla-web-adapter";
 import { PythonCVisualAdapter } from "./python-c-adapter";
+import { PolyglotUniversalAdapter } from "./polyglot-adapter";
 import { processManager } from "../process/process-manager";
 
 export class ExtensionAdapterManager {
@@ -23,9 +24,10 @@ export class ExtensionAdapterManager {
     this.registerAdapter(new KotlinComposeAdapter());
     this.registerAdapter(new VanillaWebAdapter());
     this.registerAdapter(new PythonCVisualAdapter());
+    this.registerAdapter(new PolyglotUniversalAdapter());
   }
 
-  private registerAdapter(adapter: IFrameworkAdapter): void {
+  public registerAdapter(adapter: IFrameworkAdapter): void {
     this.adapters.set(adapter.framework, adapter);
   }
 
@@ -48,7 +50,9 @@ export class ExtensionAdapterManager {
   ): Promise<AdapterRunResult> {
     const framework = await this.detectWorkspaceFramework(workspacePath);
     if (framework === "unknown") {
-      throw new Error("Aucun framework mobile ou projet HTML détecté dans l'espace de travail.");
+      throw new Error(
+        "Aucun projet exécutable détecté (HTML, React, Flutter, Compose, Python, C, Rust, Go ou elmas.json)."
+      );
     }
 
     const adapter = this.getAdapter(framework);
