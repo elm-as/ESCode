@@ -4,28 +4,17 @@ use crate::process_manager::{ProcessInfo, ProcessManager};
 use crate::sdk_detector::{self, ToolchainStatus};
 use mission_control_core::MissionControl;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
+pub mod mission_control_commands;
+
 pub struct AppState {
     pub db: Arc<DatabaseManager>,
     pub process_mgr: Arc<ProcessManager>,
     pub mission_control: Arc<MissionControl>,
-}
-
-#[tauri::command]
-pub fn mc_dispatch(
-    command: String,
-    payload: Option<Value>,
-    state: State<'_, AppState>,
-) -> Result<Value, String> {
-    state
-        .mission_control
-        .dispatch(&command, payload.unwrap_or(Value::Null))
-        .map_err(|err| err.message)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

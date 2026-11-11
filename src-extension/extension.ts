@@ -1,14 +1,15 @@
 import * as vscode from "vscode";
+import * as path from "path";
+import * as fs from "fs";
+import { spawn } from "child_process";
 import { DevicePreviewViewProvider } from "./domains/preview/DevicePreviewViewProvider";
 import { TerminalChatViewProvider } from "./domains/terminal-chat/TerminalChatViewProvider";
-import { MissionControlPanel } from "./domains/mission-control/MissionControlPanel";
 import { adapterManager } from "./domains/adapters/adapter-manager";
 import { sdkDetector } from "./domains/sdk/sdk-detector";
 import { registerGhostDomain, disposeGhostDomain } from "./domains/ghost/ghost-service";
 
 let previewProvider: DevicePreviewViewProvider;
 let terminalChatProvider: TerminalChatViewProvider;
-let missionControlPanel: MissionControlPanel;
 let missionControlStatusBarItem: vscode.StatusBarItem;
 let runStatusBarItem: vscode.StatusBarItem;
 let modeStatusBarItem: vscode.StatusBarItem;
@@ -16,17 +17,38 @@ let chatStatusBarItem: vscode.StatusBarItem;
 let liveEditTimer: ReturnType<typeof setTimeout> | null = null;
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
+function launchStandaloneMissionControl(extensionPath: string): void {
+  const candidates = [
+    path.join(extensionPath, "bin", "elmas-mission-control.exe"),
+    path.resolve(extensionPath, "..", "..", "..", "..", "target", "debug", "tauri-app.exe"),
+    path.resolve(extensionPath, "..", "..", "..", "..", "target", "release", "tauri-app.exe"),
+    "C:\\Users\\elmas\\Desktop\\Projets\\ESCode\\target\\debug\\tauri-app.exe",
+    "C:\\Users\\elmas\\Desktop\\Projets\\ESCode\\target\\release\\tauri-app.exe",
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      const child = spawn(candidate, [], {
+        detached: true,
+        stdio: "ignore",
+        windowsHide: false,
+      });
+      child.unref();
+      return;
+    }
+  }
+
+  vscode.window.showWarningMessage(
+    "Application autonome Elmas Mission Control introuvable. Lancez `pnpm run start:dashboard`."
+  );
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   previewProvider = new DevicePreviewViewProvider();
   terminalChatProvider = new TerminalChatViewProvider();
-  missionControlPanel = new MissionControlPanel(context.extensionUri);
 
   // 1. Register Webview View & Panel Serializer (restores panel on reload)
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(
-      MissionControlPanel.viewType,
-      missionControlPanel
-    ),
     vscode.window.registerWebviewViewProvider(
       DevicePreviewViewProvider.viewType,
       previewProvider
@@ -45,7 +67,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // 2. Register Commands
   context.subscriptions.push(
     vscode.commands.registerCommand("elmasStudio.openMissionControl", async () => {
-      await missionControlPanel.openAsPanel();
+      launchStandaloneMissionControl(context.extensionPath);
     }),
     vscode.commands.registerCommand("elmasStudio.openPreview", async () => {
       await previewProvider.openAsPanel(context.extensionUri);
@@ -165,11 +187,10 @@ export function activate(context: vscode.ExtensionContext): void {
     } catch {
       // Ignore if view not ready yet
     }
-    await missionControlPanel.openAsPanel();
+    if (!previewProvider.hasActivePanel()) {
+      await previewProvider.openAsPanel(context.extensionUri);
+    }
     if (vscode.workspace.workspaceFolders?.length) {
-      if (!previewProvider.hasActivePanel()) {
-        await previewProvider.openAsPanel(context.extensionUri);
-      }
       updateStatusBar(true);
     }
   }, 300);
@@ -188,9 +209,6 @@ function updateStatusBar(isRunning: boolean): void {
 }
 
 export function deactivate(): void {
-  if (missionControlPanel) {
-    missionControlPanel.dispose();
-  }
   disposeGhostDomain();
   adapterManager.stopProject();
 }

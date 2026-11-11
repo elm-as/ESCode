@@ -25,11 +25,6 @@
       "elmas-studio-container": [
         {
           "type": "webview",
-          "id": "elmasStudio.missionControlView",
-          "name": "Mission Control (Cockpit)"
-        },
-        {
-          "type": "webview",
           "id": "elmasStudio.devicePreview",
           "name": "Appareil Mobile Virtuel"
         }
@@ -38,7 +33,7 @@
     "commands": [
       {
         "command": "elmasStudio.openMissionControl",
-        "title": "Ouvrir Mission Control (Tableau de Bord)",
+        "title": "Lancer l'Application Elmas Mission Control",
         "category": "Elmas Studio",
         "icon": "$(dashboard)"
       },

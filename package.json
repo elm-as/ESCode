@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:dashboard": "tsc && vite build -c vite.dashboard.config.ts",
     "build:extension": "tsc -p tsconfig.extension.json",
     "setup:standalone": "powershell -ExecutionPolicy Bypass -File ./scripts/setup-standalone-studio.ps1",
+    "start:dashboard": "powershell -Command \"if (Test-Path './target/debug/tauri-app.exe') { Start-Process './target/debug/tauri-app.exe' } else { cargo run -p tauri-app }\"",
     "start:studio": "powershell -Command \"& './Elmas-Studio-Desktop/Elmas Studio.exe' .\"",
     "preview": "vite preview",
     "tauri": "tauri"

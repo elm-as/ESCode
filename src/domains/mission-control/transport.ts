@@ -75,8 +75,8 @@ export async function mcCall<T>(command: string, payload: unknown = null): Promi
 }
 
 /**
- * Déclenche une action hôte de l'IDE (ouvrir un dossier dans l'éditeur, ouvrir un terminal,
- * ouvrir une URL ou injecter un port dans le simulateur mobile).
+ * Déclenche une action hôte externe depuis le tableau de bord autonome
+ * (lancer `Elmas Studio.exe` sur un projet, ouvrir un terminal externe, ou ouvrir une URL).
  */
 export function triggerHostAction(action: string, payload: Record<string, unknown>): void {
   const vscode = getVsCodeApi();
@@ -84,7 +84,9 @@ export function triggerHostAction(action: string, payload: Record<string, unknow
     vscode.postMessage({ type: "mc.host", action, payload });
     return;
   }
-  window.dispatchEvent(new CustomEvent("elmas:host-action", { detail: { action, payload } }));
+  invoke("mc_host_action", { action, payload }).catch((err) => {
+    console.error("Failed to execute host action:", err);
+  });
 }
 
 /**

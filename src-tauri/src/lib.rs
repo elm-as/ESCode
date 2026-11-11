@@ -65,7 +65,8 @@ pub fn run() {
             commands::process_get_status,
             commands::fs_search_files,
             commands::detect_project_type,
-            commands::mc_dispatch,
+            commands::mission_control_commands::mc_dispatch,
+            commands::mission_control_commands::mc_host_action,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
