@@ -4,6 +4,7 @@ export type SupportedFramework =
   | "react_native"
   | "flutter"
   | "kotlin_compose"
+  | "python_c_visual"
   | "unknown";
 
 export interface AdapterCapabilities {

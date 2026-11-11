@@ -6,6 +6,7 @@ const react_native_adapter_1 = require("./react-native-adapter");
 const flutter_adapter_1 = require("./flutter-adapter");
 const kotlin_adapter_1 = require("./kotlin-adapter");
 const vanilla_web_adapter_1 = require("./vanilla-web-adapter");
+const python_c_adapter_1 = require("./python-c-adapter");
 const process_manager_1 = require("../process/process-manager");
 class ExtensionAdapterManager {
     adapters = new Map();
@@ -17,6 +18,7 @@ class ExtensionAdapterManager {
         this.registerAdapter(new flutter_adapter_1.FlutterAdapter());
         this.registerAdapter(new kotlin_adapter_1.KotlinComposeAdapter());
         this.registerAdapter(new vanilla_web_adapter_1.VanillaWebAdapter());
+        this.registerAdapter(new python_c_adapter_1.PythonCVisualAdapter());
     }
     registerAdapter(adapter) {
         this.adapters.set(adapter.framework, adapter);

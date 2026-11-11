@@ -8,6 +8,7 @@ import { ReactNativeAdapter } from "./react-native-adapter";
 import { FlutterAdapter } from "./flutter-adapter";
 import { KotlinComposeAdapter } from "./kotlin-adapter";
 import { VanillaWebAdapter } from "./vanilla-web-adapter";
+import { PythonCVisualAdapter } from "./python-c-adapter";
 import { processManager } from "../process/process-manager";
 
 export class ExtensionAdapterManager {
@@ -21,6 +22,7 @@ export class ExtensionAdapterManager {
     this.registerAdapter(new FlutterAdapter());
     this.registerAdapter(new KotlinComposeAdapter());
     this.registerAdapter(new VanillaWebAdapter());
+    this.registerAdapter(new PythonCVisualAdapter());
   }
 
   private registerAdapter(adapter: IFrameworkAdapter): void {
