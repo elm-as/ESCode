@@ -70,13 +70,21 @@ function generateDeviceHtml(options) {
 
     function applyScale() {
       if (!canvas || !sizer || !chassis) return;
+      if (devW === 0 || devH === 0) {
+        sizer.style.width = "100%";
+        sizer.style.height = "100%";
+        chassis.style.width = "100%";
+        chassis.style.height = "100%";
+        chassis.style.transform = "none";
+        return;
+      }
       if (isFitMode) {
-        const padX = 64;
-        const padY = 24;
+        const padX = 32;
+        const padY = 20;
         const availW = Math.max(canvas.clientWidth - padX, 160);
         const availH = Math.max(canvas.clientHeight - padY, 160);
         const scale = Math.min(availW / devW, availH / devH, 1.0);
-        currentScale = Math.max(scale, 0.25);
+        currentScale = Math.max(scale, 0.20);
       }
       const scaledW = Math.round(devW * currentScale);
       const scaledH = Math.round(devH * currentScale);

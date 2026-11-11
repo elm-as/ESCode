@@ -176,6 +176,19 @@ class DevicePreviewViewProvider {
         this.status = "starting";
         this.refreshWebviews();
         try {
+            const framework = await adapter_manager_1.adapterManager.detectWorkspaceFramework(rootPath);
+            if (framework === "python_c_visual" || framework === "polyglot_custom") {
+                const fluid = device_profiles_1.STANDARD_PROFILES.find((p) => p.id === "fluid");
+                if (fluid && this.selectedProfile.id === "iphone-15-pro") {
+                    this.selectedProfile = fluid;
+                }
+            }
+            else if (framework === "flutter" || framework === "react_native") {
+                const phone = device_profiles_1.STANDARD_PROFILES.find((p) => p.id === "iphone-15-pro");
+                if (phone && this.selectedProfile.id === "fluid") {
+                    this.selectedProfile = phone;
+                }
+            }
             const result = await adapter_manager_1.adapterManager.startProject(rootPath, this.mode);
             this.previewUrl = result.previewUrl;
             this.status = "running";

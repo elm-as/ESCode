@@ -240,6 +240,12 @@ export function spawnAnsiStream(
     child = spawn(resolvePythonExe(), ["-u", entry.fullPath], {
       cwd: scriptDir,
       windowsHide: true,
+      env: {
+        ...process.env,
+        PYTHONUNBUFFERED: "1",
+        COLUMNS: "80",
+        LINES: "35",
+      },
     });
   }
 
@@ -262,6 +268,13 @@ export function spawnAnsiStream(
   return child;
 }
 
+const ANSI_16: Record<number, string> = {
+  30: "#71717a", 31: "#f87171", 32: "#4ade80", 33: "#fbbf24",
+  34: "#60a5fa", 35: "#c084fc", 36: "#38bdf8", 37: "#f4f4f5",
+  90: "#a1a1aa", 91: "#ef4444", 92: "#22c55e", 93: "#f59e0b",
+  94: "#3b82f6", 95: "#a855f7", 96: "#0ea5e9", 97: "#ffffff",
+};
+
 function ansi256ToHtml(raw: string): string {
   const cleaned = raw
     .replace(/\x1b\[K/g, "")
@@ -276,6 +289,15 @@ function ansi256ToHtml(raw: string): string {
         if (!openSpan) return "";
         openSpan = false;
         return "</span>";
+      }
+      if (codeStr === "1") {
+        return "<span style=\"font-weight:700\">";
+      }
+      const num = Number(codeStr);
+      if (ANSI_16[num]) {
+        const prefix = openSpan ? "</span>" : "";
+        openSpan = true;
+        return `${prefix}<span style="color:${ANSI_16[num]}">`;
       }
       const m256 = codeStr.match(/38;5;(\d+)/);
       if (m256) {

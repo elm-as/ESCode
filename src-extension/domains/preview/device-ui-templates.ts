@@ -105,6 +105,29 @@ export function renderBottomBar(options: DeviceHtmlOptions): string {
 
 export function renderPhoneBezel(options: DeviceHtmlOptions): string {
   const isRunning = options.status === "running" && options.previewUrl;
+  const isFluid = options.profile.id === "fluid";
+
+  if (isFluid) {
+    return `
+    <div class="fluid-chassis" id="chassis">
+      ${
+        isRunning
+          ? `<iframe id="preview-frame" src="${options.previewUrl}" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>`
+          : `<div class="phone-standby">
+              <div>
+                ${
+                  options.status === "starting"
+                    ? "Démarrage de l'aperçu..."
+                    : options.status === "error"
+                    ? options.errorMessage || "Erreur de lancement"
+                    : "Application émulée en direct via Elmas Studio"
+                }
+              </div>
+            </div>`
+      }
+    </div>
+    `;
+  }
 
   return `
   <div class="device-chassis" id="chassis">

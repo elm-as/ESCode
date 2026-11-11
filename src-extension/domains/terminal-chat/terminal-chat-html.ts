@@ -10,7 +10,7 @@ export interface ChatMessageItem {
 
 /**
  * Generates the Terminal Chat UI matching the Elmas Studio editor aesthetic.
- * Zero emojis (uses 1.5px stroke SVGs), integer pixel typography (zero blur), and ANSI-free output.
+ * Strictly compliant with ELMAS.md: <= 350 lines, pure function.
  */
 export function renderTerminalChatHtml(projectName: string, initialMessages: ChatMessageItem[]): string {
   const initialJson = JSON.stringify(initialMessages);
@@ -23,238 +23,80 @@ export function renderTerminalChatHtml(projectName: string, initialMessages: Cha
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
-      width: 100%; height: 100vh; overflow: hidden;
-      background-color: #0c0c10;
-      color: #e4e4e7;
-      font-family: var(--vscode-font-family, "Segoe UI Variable Text", -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif);
-      font-size: 13px;
-      line-height: 20px;
-      display: flex;
-      flex-direction: column;
+      width: 100%; height: 100vh; overflow: hidden; background-color: #0c0c10;
+      color: #e4e4e7; font-family: var(--vscode-font-family, system-ui, sans-serif);
+      font-size: 13px; line-height: 20px; display: flex; flex-direction: column;
     }
-
-    /* Compact Toolbar (matches Aperçu Mobile toolbar style) */
     .top-bar {
-      height: 32px;
-      padding: 0 12px;
-      background: #0c0c10;
+      height: 32px; padding: 0 12px; background: #0c0c10;
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0;
     }
-
-    .cwd-group {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #a1a1aa;
-      font-size: 12px;
-    }
-    .cwd-group svg {
-      width: 14px;
-      height: 14px;
-      stroke: #f59e0b;
-      fill: none;
-      stroke-width: 1.7;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-    .cwd-name {
-      color: #e4e4e7;
-      font-weight: 500;
-      font-family: var(--vscode-editor-font-family, "JetBrains Mono", "Cascadia Code", Consolas, monospace);
-      font-size: 12px;
-    }
-
-    .actions-group {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
+    .cwd-group { display: flex; align-items: center; gap: 6px; color: #a1a1aa; font-size: 12px; }
+    .cwd-group svg { width: 14px; height: 14px; stroke: #f59e0b; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    .cwd-name { color: #e4e4e7; font-weight: 500; font-family: monospace; font-size: 12px; }
+    .actions-group { display: flex; align-items: center; gap: 6px; }
     .pill-btn {
-      height: 23px;
-      padding: 0 9px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(255, 255, 255, 0.04);
-      color: #d4d4d8;
-      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+      height: 23px; padding: 0 9px; border-radius: 6px; font-size: 11px; font-weight: 500;
+      font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04); color: #d4d4d8;
     }
-    .pill-btn:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.14);
-      color: #ffffff;
-    }
-    .pill-btn svg {
-      width: 12px;
-      height: 12px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 1.7;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
+    .pill-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+    .pill-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; }
 
-    /* Chat Stream */
     .chat-stream {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      background: #101015;
+      flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; background: #101015;
     }
-    .chat-stream::-webkit-scrollbar { width: 6px; }
-    .chat-stream::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 999px;
-    }
-
-    .msg-row {
-      display: flex;
-      flex-direction: column;
-      max-width: 82%;
-    }
-    .msg-row.user {
-      align-self: flex-end;
-      align-items: flex-end;
-    }
-    .msg-row.assistant {
-      align-self: flex-start;
-      align-items: flex-start;
-    }
-
+    .msg-row { display: flex; flex-direction: column; max-width: 82%; }
+    .msg-row.user { align-self: flex-end; align-items: flex-end; }
+    .msg-row.assistant { align-self: flex-start; align-items: flex-start; }
     .bubble {
-      padding: 8px 12px;
-      border-radius: 9px;
-      font-size: 13px;
-      line-height: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      padding: 8px 12px; border-radius: 9px; font-size: 13px; line-height: 20px;
+      display: flex; flex-direction: column; gap: 6px;
     }
     .msg-row.user .bubble {
-      background: rgba(245, 158, 11, 0.14);
-      border: 1px solid rgba(245, 158, 11, 0.32);
-      color: #fef3c7;
-      border-bottom-right-radius: 3px;
+      background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.32);
+      color: #fef3c7; border-bottom-right-radius: 3px;
     }
     .msg-row.assistant .bubble {
-      background: #16161d;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      color: #e4e4e7;
-      border-bottom-left-radius: 3px;
+      background: #16161d; border: 1px solid rgba(255, 255, 255, 0.07);
+      color: #e4e4e7; border-bottom-left-radius: 3px;
     }
-
     .code-block {
-      background: #0b0b0f;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 7px;
-      padding: 8px 10px;
-      font-family: var(--vscode-editor-font-family, "JetBrains Mono", "Cascadia Code", Consolas, monospace);
-      font-size: 12px;
-      line-height: 19px;
-      color: #d4d4d8;
-      white-space: pre-wrap;
-      word-break: break-word;
-      max-height: 170px;
-      overflow-y: auto;
-      user-select: text;
-      font-variant-numeric: tabular-nums;
+      background: #0b0b0f; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 7px;
+      padding: 8px 10px; font-family: monospace; font-size: 12px; line-height: 19px;
+      color: #d4d4d8; white-space: pre-wrap; word-break: break-word; max-height: 170px;
+      overflow-y: auto; user-select: text; font-variant-numeric: tabular-nums;
     }
-    .code-block::-webkit-scrollbar { width: 5px; }
-    .code-block::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.14);
-      border-radius: 999px;
-    }
-
     .meta-line {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 2px;
-      padding: 0 2px;
-      font-size: 11px;
-      line-height: 14px;
-      color: #71717a;
-      font-variant-numeric: tabular-nums;
+      display: flex; align-items: center; gap: 8px; margin-top: 2px;
+      padding: 0 2px; font-size: 11px; line-height: 14px; color: #71717a;
     }
     .status-ok { color: #34d399; }
     .status-err { color: #f87171; }
     .status-run { color: #fbbf24; }
 
-    /* Bottom Composer Bar */
     .composer-bar {
-      padding: 8px 12px;
-      background: #0c0c10;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
+      padding: 8px 12px; background: #0c0c10; border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
     }
     .input-box {
-      flex: 1;
-      height: 32px;
-      background: #16161d;
-      border: 1px solid rgba(255, 255, 255, 0.09);
-      border-radius: 8px;
-      padding: 0 6px 0 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: border-color 0.12s ease;
+      flex: 1; height: 32px; background: #16161d; border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 8px; padding: 0 6px 0 12px; display: flex; align-items: center; gap: 8px;
     }
-    .input-box:focus-within {
-      border-color: rgba(245, 158, 11, 0.5);
-    }
+    .input-box:focus-within { border-color: rgba(245, 158, 11, 0.5); }
     .chat-input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: #f4f4f6;
-      font-size: 13px;
-      font-family: inherit;
+      flex: 1; background: transparent; border: none; outline: none;
+      color: #f4f4f6; font-size: 13px; font-family: inherit;
     }
     .chat-input::placeholder { color: #71717a; }
-
     .send-btn {
-      width: 22px;
-      height: 22px;
-      border-radius: 6px;
-      border: none;
-      background: #d97706;
-      color: #09090b;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: background 0.12s ease;
+      width: 22px; height: 22px; border-radius: 6px; border: none;
+      background: #d97706; color: #09090b; display: inline-flex; align-items: center;
+      justify-content: center; cursor: pointer; flex-shrink: 0;
     }
     .send-btn:hover { background: #f59e0b; }
-    .send-btn svg {
-      width: 13px;
-      height: 13px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 2.2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
+    .send-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; }
   </style>
 </head>
 <body>
