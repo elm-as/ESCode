@@ -15,7 +15,12 @@
 4. **Flutter** (Flutter Web engine fast preview + Android ART native)
 5. **Kotlin / Jetpack Compose** (Compose Desktop fast preview + Android Gradle native)
 
-### Core Innovation: Fast Preview vs. Native Preview
+### Core Innovation: Fast Preview, Native Preview & Elmas Mission Control
+- **ELMAS MISSION CONTROL (Unified Engineering Cockpit)**:
+  - **Projects Catalog & Kanban**: Auto-discovers all projects across configurable scan roots (`Desktop\Projets`), detects 15+ technology stacks, tracks lifecycle status (`idea`, `active`, `production`, `paused`, `archived`), tasks checklist, milestones, tags, and Markdown architecture notes.
+  - **Real-Time TCP Port Radar**: Scans listening ports, resolves PIDs & process names, maps ports to tracked projects, and provides 1-click process-tree termination (`Kill PID`) or mobile simulator injection.
+  - **Multi-Repo Git & GitHub Fleet**: Parallel inspection of all Git repositories (`branch`, staged/modified/untracked counts, `↑ahead`/`↓behind`, last commit), inline quick commit, `Pull`/`Push`/`Fetch All`, 180-day commit heatmap, and GitHub CLI (`gh`) open PRs & Issues pulse.
+  - **Disk Hygiene & `.env` Vault**: Calculates heavy regenerable artifacts (`node_modules`, `target`, `build`, `.dart_tool`) with safe whitelisted 1-click purge, inspects/compares `.env` against `.env.example` with masked secrets, launches project scripts, and audits outdated dependencies.
 - **FAST PREVIEW**: Zero emulator overhead. Runs lightweight framework web/desktop targets on dynamic ephemeral ports with sub-second HMR. No full Android phone emulator required for UI design and component layout.
 - **NATIVE PREVIEW**: Connects real Android SDK tooling, ADB, and Android ART runtimes for native C++ bindings, system permissions, and device APIs.
 - **Zero Simulation Confusion**: The IDE explicitly communicates when a feature is simulated versus natively executed. Simulated results are never disguised as native results.

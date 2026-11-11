@@ -1,0 +1,12 @@
+[package]
+name = "mission-control-core"
+version = "0.1.0"
+edition = "2024"
+description = "Cœur métier d'Elmas Mission Control : projets, ports, Git, disque, secrets, déploiements"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+rusqlite = { workspace = true }
+sysinfo = "0.40"
+

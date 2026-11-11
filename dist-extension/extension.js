@@ -38,11 +38,14 @@ exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
 const DevicePreviewViewProvider_1 = require("./domains/preview/DevicePreviewViewProvider");
 const TerminalChatViewProvider_1 = require("./domains/terminal-chat/TerminalChatViewProvider");
+const MissionControlPanel_1 = require("./domains/mission-control/MissionControlPanel");
 const adapter_manager_1 = require("./domains/adapters/adapter-manager");
 const sdk_detector_1 = require("./domains/sdk/sdk-detector");
 const ghost_service_1 = require("./domains/ghost/ghost-service");
 let previewProvider;
 let terminalChatProvider;
+let missionControlPanel;
+let missionControlStatusBarItem;
 let runStatusBarItem;
 let modeStatusBarItem;
 let chatStatusBarItem;
@@ -51,10 +54,13 @@ let autoSaveTimer = null;
 function activate(context) {
     previewProvider = new DevicePreviewViewProvider_1.DevicePreviewViewProvider();
     terminalChatProvider = new TerminalChatViewProvider_1.TerminalChatViewProvider();
+    missionControlPanel = new MissionControlPanel_1.MissionControlPanel(context.extensionUri);
     // 1. Register Webview View & Panel Serializer (restores panel on reload)
-    context.subscriptions.push(vscode.window.registerWebviewViewProvider(DevicePreviewViewProvider_1.DevicePreviewViewProvider.viewType, previewProvider), vscode.window.registerWebviewViewProvider(TerminalChatViewProvider_1.TerminalChatViewProvider.viewType, terminalChatProvider, { webviewOptions: { retainContextWhenHidden: true } }), vscode.window.registerWebviewPanelSerializer("elmasStudio.devicePreviewPanel", previewProvider));
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider(MissionControlPanel_1.MissionControlPanel.viewType, missionControlPanel), vscode.window.registerWebviewViewProvider(DevicePreviewViewProvider_1.DevicePreviewViewProvider.viewType, previewProvider), vscode.window.registerWebviewViewProvider(TerminalChatViewProvider_1.TerminalChatViewProvider.viewType, terminalChatProvider, { webviewOptions: { retainContextWhenHidden: true } }), vscode.window.registerWebviewPanelSerializer("elmasStudio.devicePreviewPanel", previewProvider));
     // 2. Register Commands
-    context.subscriptions.push(vscode.commands.registerCommand("elmasStudio.openPreview", async () => {
+    context.subscriptions.push(vscode.commands.registerCommand("elmasStudio.openMissionControl", async () => {
+        await missionControlPanel.openAsPanel();
+    }), vscode.commands.registerCommand("elmasStudio.openPreview", async () => {
         await previewProvider.openAsPanel(context.extensionUri);
     }), vscode.commands.registerCommand("elmasStudio.runProject", async () => {
         await previewProvider.runCurrentProject();
@@ -74,6 +80,12 @@ function activate(context) {
         });
     }));
     // 3. Register Status Bar Items (French)
+    missionControlStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 105);
+    missionControlStatusBarItem.command = "elmasStudio.openMissionControl";
+    missionControlStatusBarItem.text = "$(dashboard) Mission Control";
+    missionControlStatusBarItem.tooltip = "Ouvrir le Tableau de Bord Elmas Mission Control (Ctrl+Shift+M)";
+    missionControlStatusBarItem.show();
+    context.subscriptions.push(missionControlStatusBarItem);
     runStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     runStatusBarItem.command = "elmasStudio.runProject";
     runStatusBarItem.text = "$(play) Lancer l'Aperçu";
@@ -146,6 +158,7 @@ function activate(context) {
         catch {
             // Ignore if view not ready yet
         }
+        await missionControlPanel.openAsPanel();
         if (vscode.workspace.workspaceFolders?.length) {
             if (!previewProvider.hasActivePanel()) {
                 await previewProvider.openAsPanel(context.extensionUri);
@@ -167,6 +180,9 @@ function updateStatusBar(isRunning) {
     }
 }
 function deactivate() {
+    if (missionControlPanel) {
+        missionControlPanel.dispose();
+    }
     (0, ghost_service_1.disposeGhostDomain)();
     adapter_manager_1.adapterManager.stopProject();
 }

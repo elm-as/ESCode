@@ -1,12 +1,15 @@
 import * as vscode from "vscode";
 import { DevicePreviewViewProvider } from "./domains/preview/DevicePreviewViewProvider";
 import { TerminalChatViewProvider } from "./domains/terminal-chat/TerminalChatViewProvider";
+import { MissionControlPanel } from "./domains/mission-control/MissionControlPanel";
 import { adapterManager } from "./domains/adapters/adapter-manager";
 import { sdkDetector } from "./domains/sdk/sdk-detector";
 import { registerGhostDomain, disposeGhostDomain } from "./domains/ghost/ghost-service";
 
 let previewProvider: DevicePreviewViewProvider;
 let terminalChatProvider: TerminalChatViewProvider;
+let missionControlPanel: MissionControlPanel;
+let missionControlStatusBarItem: vscode.StatusBarItem;
 let runStatusBarItem: vscode.StatusBarItem;
 let modeStatusBarItem: vscode.StatusBarItem;
 let chatStatusBarItem: vscode.StatusBarItem;
@@ -16,9 +19,14 @@ let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 export function activate(context: vscode.ExtensionContext): void {
   previewProvider = new DevicePreviewViewProvider();
   terminalChatProvider = new TerminalChatViewProvider();
+  missionControlPanel = new MissionControlPanel(context.extensionUri);
 
   // 1. Register Webview View & Panel Serializer (restores panel on reload)
   context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(
+      MissionControlPanel.viewType,
+      missionControlPanel
+    ),
     vscode.window.registerWebviewViewProvider(
       DevicePreviewViewProvider.viewType,
       previewProvider
@@ -36,6 +44,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // 2. Register Commands
   context.subscriptions.push(
+    vscode.commands.registerCommand("elmasStudio.openMissionControl", async () => {
+      await missionControlPanel.openAsPanel();
+    }),
     vscode.commands.registerCommand("elmasStudio.openPreview", async () => {
       await previewProvider.openAsPanel(context.extensionUri);
     }),
@@ -61,6 +72,13 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   // 3. Register Status Bar Items (French)
+  missionControlStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 105);
+  missionControlStatusBarItem.command = "elmasStudio.openMissionControl";
+  missionControlStatusBarItem.text = "$(dashboard) Mission Control";
+  missionControlStatusBarItem.tooltip = "Ouvrir le Tableau de Bord Elmas Mission Control (Ctrl+Shift+M)";
+  missionControlStatusBarItem.show();
+  context.subscriptions.push(missionControlStatusBarItem);
+
   runStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
   runStatusBarItem.command = "elmasStudio.runProject";
   runStatusBarItem.text = "$(play) Lancer l'Aperçu";
@@ -147,6 +165,7 @@ export function activate(context: vscode.ExtensionContext): void {
     } catch {
       // Ignore if view not ready yet
     }
+    await missionControlPanel.openAsPanel();
     if (vscode.workspace.workspaceFolders?.length) {
       if (!previewProvider.hasActivePanel()) {
         await previewProvider.openAsPanel(context.extensionUri);
@@ -169,6 +188,9 @@ function updateStatusBar(isRunning: boolean): void {
 }
 
 export function deactivate(): void {
+  if (missionControlPanel) {
+    missionControlPanel.dispose();
+  }
   disposeGhostDomain();
   adapterManager.stopProject();
 }

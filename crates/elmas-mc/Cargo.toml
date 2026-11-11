@@ -1,0 +1,15 @@
+[package]
+name = "elmas-mc"
+version = "0.1.0"
+edition = "2024"
+description = "Serveur JSON-lines d'Elmas Mission Control embarqué dans l'extension Elmas Studio"
+
+[[bin]]
+name = "elmas-mc"
+path = "src/main.rs"
+
+[dependencies]
+mission-control-core = { path = "../mission-control-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+

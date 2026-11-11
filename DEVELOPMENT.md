@@ -102,3 +102,15 @@ Strictly following `ELMAS.md` specifications:
 - **ADR-007: VSCodium-Based Standalone Distribution (Option B)**:
   - *Context*: Rather than writing an ad-hoc IDE UI from scratch, leverage VSCodium (the open-source, telemetry-free binary release of VS Code) as the desktop shell.
   - *Decision*: Implemented `src-extension/` containing the Elmas Studio Core Extension (mobile virtual device, 4 framework adapters, process manager, SDK detector) and `scripts/setup-standalone-studio.ps1` to assemble a self-contained portable distribution (`Elmas-Studio-Desktop/Elmas Studio.exe`).
+- **ADR-008: Single-Core Rust Engine (`mission-control-core` + `elmas-mc`)**:
+  - *Context*: Implementing Mission Control separately in Rust (for Tauri) and Node.js (for VSCodium) would duplicate business logic and split persistence across two stores, violating `ELMAS.md` §2 & §8.
+  - *Decision*: Extracted a workspace crate `crates/mission-control-core` shared between `src-tauri` (via `mc_dispatch`) and `crates/elmas-mc` (a JSON-lines stdio server spawned by the VSCodium extension). Both distributions render the single React 19 UI in `src/domains/mission-control/`.
+- **ADR-009: Native Process & Hardware Telemetry via `sysinfo`**:
+  - *Context*: Real-time CPU, RAM, disk, and process working-directory correlation cannot rely on slow PowerShell `Get-CimInstance` calls on every refresh tick.
+  - *Decision*: Added `sysinfo` in `mission-control-core` to sample CPU/RAM/Disks and correlate listening TCP PIDs with project directories in sub-150ms ticks.
+- **ADR-010: Shared WAL SQLite Persistence**:
+  - *Context*: Both `Elmas Studio.exe` and the Tauri shell must read and update the same project statuses, tasks, milestones, and time-tracking sessions concurrently.
+  - *Decision*: Enabled `PRAGMA journal_mode = WAL` and `busy_timeout = 5000` on `elmas_studio.db` with versioned `mc_*` schema migrations (`PRAGMA user_version`).
+- **ADR-011: Zero-Secret Persistence in `.env` Vault & CLI Integrations**:
+  - *Context*: `ELMAS.md` §9 forbids persisting sensitive credentials or tokens.
+  - *Decision*: GitHub (`gh`) and Netlify (`netlify`) integrations reuse the user's existing CLI authentication without storing tokens. `.env` values are never stored in SQLite or logs; `env.inspect` only returns key names and lengths, revealing values solely on explicit user click.

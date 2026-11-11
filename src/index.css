@@ -1,19 +1,40 @@
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
 @import "tailwindcss";
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
 @import "dockview/dist/styles/dockview.css";
 
 .dockview-theme-dark {
-  --dv-drag-over-background-color: rgba(56, 189, 248, 0.15);
-  --dv-drag-over-border-color: #38bdf8;
-  --dv-tabs-and-actions-container-background-color: #18181b;
-  --dv-activegroup-visiblepanel-tab-background-color: #09090b;
-  --dv-inactivegroup-visiblepanel-tab-background-color: #121214;
-  --dv-tab-background-color: #18181b;
-  --dv-activegroup-hiddenpanel-tab-background-color: #18181b;
-  --dv-tab-divider-color: #27272a;
-  --dv-paneview-active-outline-color: #38bdf8;
-  --dv-separator-border: #27272a;
-  --dv-activegroup-visiblepanel-tab-color: #38bdf8;
+  --dv-drag-over-background-color: rgba(245, 158, 11, 0.15);
+  --dv-drag-over-border-color: #f59e0b;
+  --dv-tabs-and-actions-container-background-color: #121218;
+  --dv-activegroup-visiblepanel-tab-background-color: #0c0c10;
+  --dv-inactivegroup-visiblepanel-tab-background-color: #101016;
+  --dv-tab-background-color: #121218;
+  --dv-activegroup-hiddenpanel-tab-background-color: #121218;
+  --dv-tab-divider-color: #23232e;
+  --dv-paneview-active-outline-color: #f59e0b;
+  --dv-separator-border: #23232e;
+  --dv-activegroup-visiblepanel-tab-color: #fbbf24;
   --dv-inactivegroup-visiblepanel-tab-color: #a1a1aa;
+}
+
+@layer astryx-theme {
+  :root,
+  [data-theme-mode="dark"] {
+    /* Elmas Amber Forge Brand & Surface Overrides for Astryx */
+    --color-accent: #f59e0b;
+    --color-accent-muted: rgba(245, 158, 11, 0.16);
+    --color-on-accent: #09090b;
+    --color-text-accent: #fbbf24;
+    --color-icon-accent: #fbbf24;
+    --color-background-body: #0c0c10;
+    --color-background-surface: #121218;
+    --color-background-card: #14141c;
+    --color-background-popover: #181822;
+    --color-border-muted: #23232e;
+    --color-border: #2e2e3d;
+  }
 }
 
 @layer base {

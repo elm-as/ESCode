@@ -6,6 +6,7 @@ pub mod sdk_detector;
 
 use commands::AppState;
 use database::DatabaseManager;
+use mission_control_core::MissionControl;
 use process_manager::ProcessManager;
 use std::sync::Arc;
 use tauri::Manager;
@@ -28,12 +29,15 @@ pub fn run() {
             }
 
             let db_path = app_data_dir.join("elmas_studio.db");
-            let db = DatabaseManager::new(db_path)
+            let db = DatabaseManager::new(&db_path)
                 .unwrap_or_else(|_| DatabaseManager::new_in_memory().expect("in-memory db failed"));
+            let mission_control = MissionControl::open(&db_path)
+                .unwrap_or_else(|_| MissionControl::open_in_memory().expect("in-memory mc failed"));
 
             let app_state = AppState {
                 db: Arc::new(db),
                 process_mgr: process_mgr.clone(),
+                mission_control: Arc::new(mission_control),
             };
 
             app.manage(app_state);
@@ -61,6 +65,7 @@ pub fn run() {
             commands::process_get_status,
             commands::fs_search_files,
             commands::detect_project_type,
+            commands::mc_dispatch,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

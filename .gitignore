@@ -26,4 +26,8 @@ dist-ssr
 # Standalone IDE binaries & zips
 *.zip
 Elmas-Studio-Desktop/
+target/
+dist-dashboard/
+.astryx/
+
 

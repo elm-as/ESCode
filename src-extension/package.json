@@ -25,12 +25,23 @@
       "elmas-studio-container": [
         {
           "type": "webview",
+          "id": "elmasStudio.missionControlView",
+          "name": "Mission Control (Cockpit)"
+        },
+        {
+          "type": "webview",
           "id": "elmasStudio.devicePreview",
           "name": "Appareil Mobile Virtuel"
         }
       ]
     },
     "commands": [
+      {
+        "command": "elmasStudio.openMissionControl",
+        "title": "Ouvrir Mission Control (Tableau de Bord)",
+        "category": "Elmas Studio",
+        "icon": "$(dashboard)"
+      },
       {
         "command": "elmasStudio.openPreview",
         "title": "Ouvrir l'Aperçu Mobile",
@@ -58,11 +69,22 @@
     "menus": {
       "editor/title": [
         {
+          "command": "elmasStudio.openMissionControl",
+          "group": "navigation"
+        },
+        {
           "command": "elmasStudio.openPreview",
           "group": "navigation"
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "elmasStudio.openMissionControl",
+        "key": "ctrl+shift+m",
+        "mac": "cmd+shift+m"
+      }
+    ],
     "configuration": {
       "title": "Elmas Studio",
       "properties": {

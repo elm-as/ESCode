@@ -8,9 +8,11 @@ Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "  ELMAS STUDIO - Standalone Distribution  " -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
-# 1. Compile extension
-Write-Host "[1/6] Compiling Elmas Studio Core Extension..." -ForegroundColor Yellow
+# 1. Compile extension, dashboard UI bundle & elmas-mc CLI daemon
+Write-Host "[1/6] Compiling Elmas Studio Core Extension, Mission Control UI & Rust Daemon..." -ForegroundColor Yellow
+pnpm run build:dashboard
 pnpm exec tsc -p tsconfig.extension.json
+cargo build -p elmas-mc
 
 if (-not (Test-Path "dist-extension/extension.js")) {
   Write-Error "Extension compilation failed: dist-extension/extension.js not found."
@@ -53,12 +55,23 @@ Set-Content -Path $elmasCmd -Value "@echo off`r`nsetlocal`r`nset VSCODE_DEV=`r`n
 
 
 # 5. Pre-bundle Elmas Studio Core Extension in portable data directory
-Write-Host "[5/6] Pre-bundling Elmas Studio Core Extension..." -ForegroundColor Yellow
+Write-Host "[5/6] Pre-bundling Elmas Studio Core Extension & Mission Control..." -ForegroundColor Yellow
 $extDir = Join-Path $DestinationDir "data\extensions\elmas-studio-core"
 if (-not (Test-Path $extDir)) {
   New-Item -ItemType Directory -Force -Path $extDir | Out-Null
 }
+Copy-Item -Path "src-extension\package.json" -Destination $extDir -Force
 Copy-Item -Path "dist-extension\*" -Destination $extDir -Recurse -Force
+if (Test-Path "dist-dashboard") {
+  $dashDest = Join-Path $extDir "dist-dashboard"
+  New-Item -ItemType Directory -Force -Path $dashDest | Out-Null
+  Copy-Item -Path "dist-dashboard\*" -Destination $dashDest -Recurse -Force
+}
+if (Test-Path "target\debug\elmas-mc.exe") {
+  $binDest = Join-Path $extDir "bin"
+  New-Item -ItemType Directory -Force -Path $binDest | Out-Null
+  Copy-Item -Path "target\debug\elmas-mc.exe" -Destination $binDest -Force
+}
 
 # 6. Customize product.json, French language pack, and Elmas Amber Forge branding
 Write-Host "[6/6] Applying Elmas Studio branding, French locale, and Amber Forge theme..." -ForegroundColor Yellow
